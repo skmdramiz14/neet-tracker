@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Notes — NEET 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --parchment:#EDE7D9; --parchment-deep:#E3DCCB; --ink:#1C2B39; --ink-soft:#3C4A56;
+    --green:#2F4A3C; --green-soft:#40614F; --rust:#B0431F; --gold:#A9822C; --pencil:#8B8478;
+    --line:rgba(28,43,57,0.14); --card:#F5F1E6; --ok:#3F6B4D;
+    --s-physics:#3B5A75; --s-pchem:#3F7A6B; --s-ichem:#A9822C; --s-ochem:#B0431F; --s-botany:#2F4A3C; --s-zoology:#6B3A4A;
+    --r-pdf:#7A3B3B; --r-book:#3F6B4D; --r-paper:#B0431F; --r-notes:#A9822C; --r-lecture:#3B5A75; --r-other:#8B8478;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; background:var(--parchment); background-image:radial-gradient(circle at 1px 1px, rgba(28,43,57,0.05) 1px, transparent 0); background-size:22px 22px; color:var(--ink); font-family:'Lora',serif; -webkit-font-smoothing:antialiased; }
+  a{ color:inherit; }
+  ::selection{ background:var(--gold); color:var(--parchment); }
+  :focus-visible{ outline:2px solid var(--rust); outline-offset:3px; }
+  button{ font-family:inherit; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 28px; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+
+  .spectrum-strip{ height:4px; width:100%; background:linear-gradient(90deg, var(--s-physics), var(--s-pchem), var(--s-ichem), var(--s-ochem), var(--s-botany), var(--s-zoology)); position:sticky; top:0; z-index:41; }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; padding:16px 28px; border-bottom:1px solid var(--line); position:sticky; top:4px; background:var(--parchment); z-index:40; }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand-stamp{ width:42px; height:42px; border-radius:50%; border:1.5px solid var(--ink); flex-shrink:0; display:flex; align-items:center; justify-content:center; position:relative; background:var(--card); }
+  .brand-stamp::before{ content:''; position:absolute; inset:4px; border:1px dashed var(--rust); border-radius:50%; opacity:0.55; }
+  .brand-stamp svg{ width:18px; height:18px; color:var(--rust); position:relative; }
+  .brand-text h2{ font-family:'Fraunces',serif; font-style:italic; font-weight:600; font-size:19px; margin:0; line-height:1.1; letter-spacing:-0.01em; }
+  .brand-text p{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--pencil); margin:2px 0 0; }
+  .file-tab{ font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:6px 12px; border-radius:3px; }
+  .file-tab b{ color:var(--rust); }
+  .topbar-right{ display:flex; align-items:center; gap:16px; }
+  .topbar-daybadge{ display:flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:6px 12px; border-radius:20px; }
+  .topbar-daybadge b{ color:var(--rust); font-weight:600; }
+  .topbar-daybadge .sep{ width:1px; height:11px; background:var(--line); }
+  .topbar-date{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--pencil); letter-spacing:0.08em; text-transform:uppercase; }
+  .bell-btn{ position:relative; background:var(--card); border:1px solid var(--line); width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink); }
+  .bell-btn:hover{ background:#EFE8D6; }
+  .bell-btn svg{ width:16px; height:16px; }
+  .bell-dot{ position:absolute; top:5px; right:6px; width:8px; height:8px; border-radius:50%; background:var(--rust); border:1.5px solid var(--parchment); }
+  .notif-panel{ position:absolute; top:56px; right:28px; width:320px; background:var(--card); border:1px solid var(--line); border-radius:6px; box-shadow:0 16px 34px rgba(28,43,57,0.18); z-index:50; display:none; overflow:hidden; }
+  .notif-panel.open{ display:block; }
+  .notif-head{ padding:14px 16px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--pencil); }
+  .notif-item{ padding:13px 16px; border-bottom:1px solid var(--line); font-size:13.5px; line-height:1.5; }
+  .notif-item:last-child{ border-bottom:none; }
+  .notif-item .t{ font-weight:600; margin-bottom:3px; }
+  .notif-item .m{ color:var(--ink-soft); font-size:12.5px; }
+  .notif-item.warn .t{ color:var(--rust); }
+
+  .hero{ padding:42px 28px 8px; }
+  .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:var(--green); margin:0 0 14px; }
+  .eyebrow::before{ content:''; display:inline-block; width:22px; height:1px; background:var(--green); margin-right:10px; vertical-align:middle; }
+
+  /* ---------- POSTER HEADER ---------- */
+  .poster-wrap{ padding:32px 28px 0; }
+  .poster{ position:relative; border:1.5px solid var(--ink); background:var(--card); padding:40px 44px 26px; }
+  .poster::after{ content:''; position:absolute; inset:8px; border:1px solid var(--line); pointer-events:none; }
+  .poster-reg{ position:absolute; width:15px; height:15px; z-index:2; }
+  .poster-reg::before{ content:''; position:absolute; width:100%; height:1px; top:50%; background:var(--rust); }
+  .poster-reg::after{ content:''; position:absolute; height:100%; width:1px; left:50%; background:var(--rust); }
+  .poster-reg.tl{ top:-7.5px; left:-7.5px; } .poster-reg.tr{ top:-7.5px; right:-7.5px; } .poster-reg.bl{ bottom:-7.5px; left:-7.5px; } .poster-reg.br{ bottom:-7.5px; right:-7.5px; }
+  .poster-top{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.16em; color:var(--pencil); margin-bottom:34px; text-transform:uppercase; padding-bottom:14px; border-bottom:1px solid var(--line); position:relative; }
+  .poster-body{ display:grid; grid-template-columns:1.6fr 1fr; gap:40px; align-items:end; position:relative; }
+  .poster-title{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(52px,8.6vw,120px); line-height:0.86; letter-spacing:-0.02em; margin:0 0 20px; }
+  .poster-title em{ font-style:italic; color:var(--rust); font-weight:500; display:block; }
+  .poster-sub{ font-size:16px; line-height:1.65; color:var(--ink-soft); max-width:44ch; margin:0; }
+  .poster-numeral{ text-align:right; border-left:1px solid var(--line); padding-left:32px; }
+  .poster-numeral-label{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.14em; color:var(--pencil); text-transform:uppercase; }
+  .poster-numeral-big{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(58px,7.2vw,100px); line-height:1; color:var(--ink); margin:4px 0; }
+  .poster-numeral-sub{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--rust); letter-spacing:0.03em; margin-top:4px; }
+  .poster-goal{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px; margin-top:30px; padding:20px 26px; background:var(--green); border-radius:2px; }
+  .poster-goal-tag{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; color:#C9D4C6; display:block; margin-bottom:5px; }
+  .poster-goal-text{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(17px,2.1vw,21px); color:#fff; line-height:1.25; }
+  .poster-goal-right{ text-align:right; max-width:36ch; }
+  .poster-goal-motto{ font-family:'Fraunces',serif; font-style:italic; font-weight:500; font-size:14.5px; color:#D8B25C; line-height:1.5; margin:0; }
+  @media (max-width:700px){ .poster-goal{ flex-direction:column; align-items:flex-start; } .poster-goal-right{ text-align:left; } }
+  .poster-bottom{ display:flex; gap:0; justify-content:center; flex-wrap:wrap; margin-top:20px; padding-top:15px; border-top:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--pencil); }
+  .poster-bottom span{ padding:0 18px; }
+  .poster-bottom span:not(:last-child){ border-right:1px solid var(--line); }
+  @media (max-width:820px){
+    .poster-body{ grid-template-columns:1fr; }
+    .poster-numeral{ border-left:none; border-top:1px solid var(--line); padding-left:0; padding-top:20px; text-align:left; }
+  }
+  @media (max-width:560px){ .poster{ padding:30px 22px 20px; } .poster-top{ font-size:9px; } }
+  h1{ font-family:'Fraunces',serif; font-weight:500; font-size:clamp(30px,4.2vw,46px); line-height:1.05; letter-spacing:-0.01em; margin:0 0 10px; max-width:22ch; }
+  h1 em{ font-style:italic; font-weight:500; color:var(--rust); }
+  .lede{ font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:60ch; margin:0 0 22px; }
+  .hero-goal{ display:flex; align-items:center; flex-wrap:wrap; gap:14px; padding:14px 18px; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--rust); border-radius:3px; margin-bottom:30px; }
+  .hero-goal-item{ font-size:13.5px; color:var(--ink-soft); line-height:1.5; }
+  .hero-goal-item b{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--rust); margin-right:6px; }
+  .hero-goal-item.motto{ font-family:'Fraunces',serif; font-style:italic; color:var(--green); font-size:14px; }
+  .hero-goal-sep{ width:1px; height:16px; background:var(--line); }
+  @media (max-width:600px){ .hero-goal-sep{ display:none; } }
+
+  .stat-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:34px; }
+  .stat-card{ background:var(--card); border:1px solid var(--line); border-radius:4px; padding:16px 16px 14px; position:relative; overflow:hidden; }
+  .stat-card::before{ content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--green); }
+  .stat-card.rust::before{ background:var(--rust); }
+  .stat-card.gold::before{ background:var(--gold); }
+  .stat-label{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--pencil); margin-bottom:8px; }
+  .stat-val{ font-family:'Fraunces',serif; font-weight:600; font-size:30px; line-height:1; color:var(--ink); }
+  .stat-val span{ font-size:14px; font-weight:500; color:var(--pencil); font-family:'JetBrains Mono',monospace; }
+  .stat-sub{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ok); margin-top:6px; }
+  .stat-sub.warn{ color:var(--rust); }
+
+  .ruler-block{ margin:4px 0 44px; }
+  .ruler-label{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--pencil); letter-spacing:0.06em; margin-bottom:7px; }
+  .ruler{ position:relative; height:22px; border-bottom:1px solid var(--ink); }
+  .ruler-fill{ position:absolute; left:0; bottom:-1px; height:2px; background:var(--green); width:4%; }
+  .ruler-ticks{ display:flex; height:100%; align-items:flex-end; }
+  .ruler-ticks span{ flex:1; border-left:1px solid var(--line); height:8px; }
+  .ruler-ticks span:nth-child(10n+1){ height:14px; border-left-color:var(--ink-soft); }
+
+  .section-head{ display:flex; justify-content:space-between; align-items:baseline; margin:0 0 16px; padding-bottom:12px; border-bottom:1px solid var(--ink); }
+  .section-head h2{ font-family:'Fraunces',serif; font-weight:500; font-size:22px; margin:0; }
+  .section-head span{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--pencil); letter-spacing:0.08em; }
+  .subject-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:46px; }
+  .subj-card{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:16px 17px; position:relative; cursor:pointer; transition:transform 0.18s ease, box-shadow 0.18s ease; text-align:left; width:100%; }
+  .subj-card:hover{ transform:translateY(-3px); box-shadow:0 10px 22px rgba(28,43,57,0.12); }
+  .subj-card:hover .subj-open{ opacity:1; transform:translateX(0); }
+  .subj-chip{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:middle; }
+  .subj-name{ font-family:'Fraunces',serif; font-weight:500; font-size:16px; display:inline; vertical-align:middle; }
+  .subj-group{ font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--pencil); letter-spacing:0.08em; text-transform:uppercase; margin:2px 0 12px 17px; }
+  .subj-bar-track{ height:5px; background:var(--parchment-deep); border-radius:3px; overflow:hidden; margin-bottom:10px; }
+  .subj-bar-fill{ height:100%; border-radius:3px; }
+  .subj-meta-row{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink-soft); }
+  .subj-meta-row div{ text-align:center; flex:1; }
+  .subj-meta-row b{ display:block; font-size:14px; font-family:'Fraunces',serif; font-weight:600; color:var(--ink); margin-bottom:2px; }
+  .subj-meta-row .warn-n{ color:var(--rust); }
+  .subj-open{ position:absolute; top:16px; right:15px; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); opacity:0; transform:translateX(-4px); transition:all 0.18s ease; }
+
+  .main-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:24px; padding:0 28px 20px; align-items:start; }
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:5px; margin-bottom:22px; overflow:hidden; }
+  .panel-head{ display:flex; justify-content:space-between; align-items:center; padding:15px 18px; border-bottom:1px solid var(--line); }
+  .panel-head h2{ font-family:'Fraunces',serif; font-weight:500; font-size:18px; margin:0; }
+  .panel-head .count{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--pencil); letter-spacing:0.08em; }
+  .panel-body{ padding:6px 18px 16px; }
+
+  .task-row{ display:flex; align-items:flex-start; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .task-row:last-child{ border-bottom:none; }
+  .task-check{ width:19px; height:19px; border:1.5px solid var(--ink-soft); border-radius:3px; flex-shrink:0; margin-top:2px; cursor:pointer; display:flex; align-items:center; justify-content:center; background:#fff; }
+  .task-check.done{ background:var(--green); border-color:var(--green); }
+  .task-check svg{ width:12px; height:12px; color:#fff; display:none; }
+  .task-check.done svg{ display:block; }
+  .task-main{ flex:1; }
+  .task-title{ font-size:14.5px; font-weight:500; }
+  .task-title.done{ text-decoration:line-through; color:var(--pencil); }
+  .subj-tag{ display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--pencil); text-transform:uppercase; letter-spacing:0.06em; margin-top:3px; }
+  .subj-tag .dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .task-time{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); flex-shrink:0; padding-top:2px; }
+
+  .backlog-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px dashed var(--line); }
+  .backlog-row:last-child{ border-bottom:none; }
+  .backlog-age{ font-family:'JetBrains Mono',monospace; font-size:10px; background:rgba(176,67,31,0.1); color:var(--rust); padding:3px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap; }
+  .backlog-main{ flex:1; }
+  .backlog-title{ font-size:14px; }
+  .backlog-btn{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; background:none; border:1px solid var(--green); color:var(--green); padding:6px 10px; border-radius:3px; cursor:pointer; flex-shrink:0; }
+  .backlog-btn:hover{ background:var(--green); color:#fff; }
+  .empty-note{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--pencil); padding:14px 0; text-align:center; }
+
+  .cal-nav{ display:flex; align-items:center; gap:10px; }
+  .cal-nav button{ background:none; border:1px solid var(--line); width:24px; height:24px; border-radius:3px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .cal-nav button:hover{ background:var(--parchment-deep); }
+  .cal-nav svg{ width:12px; height:12px; }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:4px 0 10px; }
+  .cal-dow{ font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--pencil); text-align:center; text-transform:uppercase; padding-bottom:4px; }
+  .cal-cell{ aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:3px; cursor:pointer; font-size:12.5px; position:relative; color:var(--ink-soft); }
+  .cal-cell:hover{ background:var(--parchment-deep); }
+  .cal-cell.muted{ color:#C7C0AF; cursor:default; }
+  .cal-cell.today{ background:var(--ink); color:#fff; font-weight:600; }
+  .cal-cell.selected:not(.today){ background:var(--gold); color:#fff; }
+  .cal-dots{ display:flex; gap:2px; margin-top:2px; }
+  .cal-dots span{ width:4px; height:4px; border-radius:50%; }
+  .cal-agenda{ border-top:1px solid var(--line); padding-top:10px; margin-top:4px; }
+  .cal-agenda-date{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--pencil); text-transform:uppercase; margin-bottom:6px; }
+  .cal-agenda-item{ display:flex; align-items:center; gap:6px; font-size:13px; padding:4px 0; }
+  .cal-agenda-item .dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .cal-agenda-item .tag{ font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--pencil); }
+
+  .note-form{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .note-form input, .note-form textarea, .note-form select{ font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:8px 10px; background:#fff; color:var(--ink); resize:vertical; }
+  .note-form textarea{ min-height:52px; }
+  .note-form-row{ display:flex; gap:8px; }
+  .note-form-row input:first-child{ flex:1; }
+  .note-form-row select{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); padding:0 8px; }
+  .note-add-btn{ align-self:flex-start; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; background:var(--ink); color:#fff; border:none; padding:8px 14px; border-radius:3px; cursor:pointer; }
+  .note-add-btn:hover{ background:var(--rust); }
+  .note-item{ padding:10px 0; border-bottom:1px solid var(--line); }
+  .note-item:last-child{ border-bottom:none; }
+  .note-item-head{ display:flex; justify-content:space-between; align-items:baseline; }
+  .note-item-title{ font-weight:600; font-size:13.5px; }
+  .note-item-tag{ display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:0.05em; }
+  .note-item-tag .dot{ width:6px; height:6px; border-radius:50%; }
+  .note-item-body{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; line-height:1.5; }
+  .note-item-date{ font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--pencil); margin-top:4px; }
+
+  .philosophy{ background:var(--green); color:var(--parchment); padding:40px 28px; margin:10px 0 0; }
+  .philosophy-inner{ max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:30px; flex-wrap:wrap; justify-content:space-between; }
+  .philosophy-quote{ font-family:'Fraunces',serif; font-style:italic; font-weight:500; font-size:clamp(18px,2.4vw,24px); line-height:1.4; margin:0; max-width:62ch; }
+  .philosophy-quote .mark{ color:#D8B25C; font-style:normal; }
+  .philosophy-tag{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:#C9D4C6; white-space:nowrap; }
+
+  footer{ background:var(--ink); color:var(--parchment); margin-top:10px; }
+  .foot-nav{ max-width:1180px; margin:0 auto; padding:52px 28px 30px; display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:36px; }
+  .foot-brand-mark{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .foot-stamp{ width:38px; height:38px; border-radius:50%; border:1.5px solid rgba(237,231,217,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .foot-stamp svg{ width:16px; height:16px; color:var(--gold); }
+  .foot-brand-mark h3{ font-family:'Fraunces',serif; font-style:italic; font-weight:600; font-size:18px; margin:0; color:#fff; }
+  .foot-tagline{ font-size:13px; line-height:1.6; color:#B7BFC0; max-width:32ch; margin:0; }
+  .foot-col h4{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#8B9490; margin:0 0 14px; }
+  .foot-col ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .foot-col button, .foot-col a{ background:none; border:none; padding:0; text-align:left; font-family:'Lora',serif; font-size:13.5px; color:#DCE0DE; cursor:pointer; display:flex; align-items:center; gap:8px; transition:color 0.15s ease; }
+  .foot-col button:hover, .foot-col a:hover{ color:#fff; }
+  .foot-col .dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .foot-bottom{ border-top:1px solid rgba(237,231,217,0.14); padding:18px 28px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#8B9490; letter-spacing:0.06em; max-width:1180px; margin:0 auto; }
+  @media (max-width:820px){ .foot-nav{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .foot-nav{ grid-template-columns:1fr; } }
+
+  /* ---------- SUBJECT DETAIL VIEW ---------- */
+  #subjectView{ display:none; }
+  .back-btn{ display:inline-flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; background:none; border:1px solid var(--line); color:var(--ink-soft); padding:8px 13px; border-radius:3px; cursor:pointer; margin:26px 0 22px; }
+  .back-btn:hover{ background:var(--card); }
+  .back-btn svg{ width:12px; height:12px; }
+  .subj-detail-head{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .subj-detail-chip{ width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+  .subj-detail-head h1{ font-family:'Fraunces',serif; font-weight:500; font-size:clamp(28px,4vw,40px); margin:0; }
+  .subj-detail-group{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--pencil); letter-spacing:0.1em; text-transform:uppercase; margin:0 0 30px 26px; }
+
+  /* ---------- LOGIN GATE ---------- */
+  #loginGate{ position:fixed; inset:0; background:var(--parchment); z-index:1000; display:flex; flex-direction:column; }
+  #loginGate.hidden{ display:none; }
+  #appRoot.hidden{ display:none; }
+  .login-box{ flex:1; display:flex; align-items:center; justify-content:center; }
+  .login-card{ width:340px; background:var(--card); border:1px solid var(--line); border-radius:6px; padding:36px 32px; }
+  .login-brand{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .login-input{ width:100%; padding:10px 12px; margin-bottom:10px; border:1px solid var(--line); border-radius:3px; font-family:'Lora',serif; font-size:14px; }
+  .login-btn{ width:100%; padding:11px; background:var(--ink); color:#fff; border:none; border-radius:3px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; }
+  .login-btn:hover{ background:var(--rust); }
+  .login-error{ color:var(--rust); font-size:12px; margin-bottom:10px; }
+  .signout-btn{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--pencil); background:none; border:1px solid var(--line); border-radius:20px; padding:7px 12px; cursor:pointer; text-transform:uppercase; }
+  .detail-stat-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:40px; }
+  .detail-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:8px; }
+  .test-row{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); }
+  .test-row:last-child{ border-bottom:none; }
+  .test-name{ font-size:13.5px; font-weight:500; }
+  .test-date{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); text-transform:uppercase; margin-top:2px; }
+  .test-score{ font-family:'Fraunces',serif; font-weight:600; font-size:17px; flex-shrink:0; }
+  .test-score span{ font-size:11px; font-weight:400; color:var(--pencil); font-family:'JetBrains Mono',monospace; }
+
+  /* resources */
+  .res-tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .res-tab{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase; background:var(--card); border:1px solid var(--line); padding:7px 13px; border-radius:20px; cursor:pointer; color:var(--ink-soft); }
+  .res-tab.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .res-form{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:16px; margin-bottom:20px; }
+  .res-form-grid{ display:grid; grid-template-columns:1.3fr 0.9fr 1.4fr; gap:8px; margin-bottom:8px; }
+  .res-form input, .res-form select{ font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:8px 10px; background:#fff; color:var(--ink); }
+  .res-form select{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); }
+  .res-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .res-card{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:14px 15px; }
+  .res-type-badge{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:3px 8px; border-radius:10px; color:#fff; margin-bottom:9px; }
+  .res-title{ font-size:14px; font-weight:600; margin-bottom:4px; }
+  .res-note{ font-size:12px; color:var(--ink-soft); line-height:1.5; margin-bottom:8px; }
+  .res-link{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink); text-decoration:underline; }
+  .res-link.disabled{ color:var(--pencil); text-decoration:none; cursor:default; }
+
+  .journal-nav-btn{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; background:var(--green); color:#fff; border:none; padding:9px 15px; border-radius:3px; cursor:pointer; }
+  .journal-nav-btn:hover{ background:var(--rust); }
+
+  /* ---------- SEARCH OVERLAY ---------- */
+  .search-overlay{ position:fixed; inset:0; background:rgba(28,43,57,0.4); z-index:100; display:none; align-items:flex-start; justify-content:center; padding-top:10vh; }
+  .search-overlay.open{ display:flex; }
+  .search-box{ width:min(600px, 90vw); background:var(--parchment); border:1px solid var(--ink); border-radius:6px; box-shadow:0 24px 60px rgba(0,0,0,0.3); max-height:70vh; display:flex; flex-direction:column; overflow:hidden; }
+  .search-input-row{ display:flex; align-items:center; gap:10px; padding:16px 18px; border-bottom:1px solid var(--line); }
+  .search-input-row svg{ width:16px; height:16px; color:var(--pencil); flex-shrink:0; }
+  .search-input-row input{ flex:1; border:none; background:none; font-family:'Lora',serif; font-size:16px; color:var(--ink); outline:none; }
+  .search-esc{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); border:1px solid var(--line); padding:3px 6px; border-radius:3px; flex-shrink:0; }
+  .search-results{ overflow-y:auto; padding:8px 0; }
+  .search-group-label{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--pencil); padding:10px 18px 6px; }
+  .search-result{ display:flex; align-items:center; gap:10px; padding:10px 18px; cursor:pointer; }
+  .search-result:hover{ background:var(--card); }
+  .search-result .dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .search-result-title{ font-size:13.5px; font-weight:500; }
+  .search-result-meta{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); text-transform:uppercase; margin-left:auto; flex-shrink:0; }
+  .search-empty{ padding:30px 18px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--pencil); }
+
+  /* ---------- WEEKLY PLANNER ---------- */
+  .week-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:46px; }
+  .week-col{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:12px 10px; min-height:150px; }
+  .week-col.is-today{ border-color:var(--rust); box-shadow:0 0 0 1px var(--rust) inset; }
+  .week-col-head{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--pencil); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--line); text-align:center; }
+  .week-col.is-today .week-col-head{ color:var(--rust); font-weight:600; }
+  .week-chip{ font-size:11px; padding:6px 7px; border-radius:3px; background:#fff; border:1px solid var(--line); margin-bottom:6px; line-height:1.35; }
+  .week-chip .dot{ width:5px; height:5px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .week-empty{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:#C7C0AF; text-align:center; padding-top:10px; }
+  @media (max-width:920px){ .week-grid{ grid-template-columns:repeat(4,1fr); } }
+  @media (max-width:560px){ .week-grid{ grid-template-columns:repeat(2,1fr); } }
+
+  /* ---------- MOOD TREND ---------- */
+  .mood-trend-wrap{ margin-top:4px; }
+  .mood-trend-bars{ display:flex; align-items:flex-end; gap:5px; height:90px; }
+  .mood-bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .mood-bar{ width:100%; border-radius:2px 2px 0 0; transition:height 0.2s ease; }
+  .mood-bar-label{ font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--pencil); margin-top:5px; }
+  .mood-trend-legend{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); margin-top:4px; text-transform:uppercase; }
+
+  /* ---------- REVISION QUEUE ---------- */
+  .rev-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .rev-row:last-child{ border-bottom:none; }
+  .rev-due{ font-family:'JetBrains Mono',monospace; font-size:9.5px; text-transform:uppercase; padding:3px 8px; border-radius:10px; flex-shrink:0; white-space:nowrap; }
+  .rev-due.today{ background:rgba(63,107,77,0.12); color:var(--ok); }
+  .rev-due.overdue{ background:rgba(176,67,31,0.1); color:var(--rust); }
+  .rev-main{ flex:1; }
+  .rev-title{ font-size:14px; font-weight:500; }
+  .rev-btns{ display:flex; gap:6px; flex-shrink:0; }
+  .rev-btn{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; border:1px solid var(--line); background:#fff; color:var(--ink-soft); padding:6px 9px; border-radius:3px; cursor:pointer; }
+  .rev-btn:hover{ background:var(--parchment-deep); }
+  .rev-btn.easy:hover{ border-color:var(--ok); color:var(--ok); }
+  .rev-btn.hard:hover{ border-color:var(--rust); color:var(--rust); }
+
+  /* ---------- JOURNAL VIEW ---------- */
+  #journalView{ display:none; }
+  .journal-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:8px; }
+  .mood-row{ display:flex; gap:10px; margin:6px 0 16px; }
+  .mood-btn{ width:44px; height:44px; border-radius:50%; border:1.5px solid var(--line); background:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s ease; }
+  .mood-btn:hover{ border-color:var(--gold); }
+  .mood-btn.selected{ border-color:var(--rust); background:var(--card); transform:scale(1.1); }
+  .upload-zone{ border:1.5px dashed var(--line); border-radius:5px; padding:22px; text-align:center; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--pencil); }
+  .upload-zone:hover{ border-color:var(--rust); color:var(--rust); }
+  .media-preview-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .media-thumb{ width:64px; height:64px; border-radius:4px; overflow:hidden; border:1px solid var(--line); }
+  .media-thumb img, .media-thumb video{ width:100%; height:100%; object-fit:cover; }
+  .journal-entry{ padding:14px 0; border-bottom:1px solid var(--line); }
+  .journal-entry:last-child{ border-bottom:none; }
+  .journal-entry-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .journal-entry-date{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--pencil); text-transform:uppercase; }
+  .journal-entry-mood{ font-size:18px; }
+  .journal-entry-text{ font-size:13.5px; line-height:1.6; color:var(--ink-soft); }
+
+  .sw-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .sw-col h4{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin:0 0 10px; }
+  .sw-col.strength h4{ color:var(--ok); }
+  .sw-col.weakness h4{ color:var(--rust); }
+  .sw-item{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .sw-item:last-child{ border-bottom:none; }
+  .sw-item .subj{ font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--pencil); text-transform:uppercase; display:block; margin-top:2px; }
+  .sw-form{ display:flex; gap:6px; margin-bottom:12px; }
+  .sw-form input{ flex:1; font-family:'Lora',serif; font-size:12.5px; border:1px solid var(--line); border-radius:3px; padding:7px 9px; }
+  .sw-form select{ font-family:'JetBrains Mono',monospace; font-size:10.5px; border:1px solid var(--line); border-radius:3px; padding:0 6px; color:var(--ink-soft); }
+  .sw-add-btn{ font-family:'JetBrains Mono',monospace; font-size:16px; background:var(--ink); color:#fff; border:none; width:30px; border-radius:3px; cursor:pointer; flex-shrink:0; }
+
+  .dist-form{ display:grid; grid-template-columns:1.4fr 0.7fr 1fr auto; gap:8px; margin-bottom:14px; }
+  .dist-form input, .dist-form select{ font-family:'Lora',serif; font-size:12.5px; border:1px solid var(--line); border-radius:3px; padding:8px 9px; }
+  .dist-form select{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-soft); }
+  .dist-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .dist-row:last-child{ border-bottom:none; }
+  .dist-meta{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--pencil); text-transform:uppercase; }
+
+  .summary-tabs{ display:flex; gap:8px; margin-bottom:16px; }
+  .summary-tab{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase; background:var(--card); border:1px solid var(--line); padding:8px 15px; border-radius:20px; cursor:pointer; color:var(--ink-soft); }
+  .summary-tab.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .summary-box{ background:var(--card); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:3px; padding:20px 22px; }
+  .summary-text{ font-family:'Fraunces',serif; font-size:15.5px; line-height:1.8; color:var(--ink); font-style:italic; }
+  .summary-note{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); margin-top:12px; text-transform:uppercase; letter-spacing:0.04em; }
+
+  @media (max-width:820px){ .journal-two-col, .sw-grid{ grid-template-columns:1fr; } .dist-form{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:600px){ .dist-form{ grid-template-columns:1fr; } }
+  @media (max-width:980px){ .subject-grid{ grid-template-columns:repeat(2,1fr); } .res-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:920px){ .main-grid, .detail-two-col{ grid-template-columns:1fr; } .stat-row, .detail-stat-row{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:700px){ .brand-text p{ display:none; } .topbar-date{ display:none; } }
+  @media (max-width:560px){ .stat-row, .detail-stat-row{ grid-template-columns:repeat(2,1fr); } .note-form-row, .res-form-grid{ flex-direction:column; grid-template-columns:1fr; } .subject-grid{ grid-template-columns:1fr; } .res-grid{ grid-template-columns:1fr; } .topbar-daybadge span:not(.sep){ display:none; } }
+</style>
+</head>
+<body>
+
+  <div id="loginGate">
+    <div class="login-box">
+      <form class="login-card" id="loginForm">
+        <div class="login-brand">
+          <div class="brand-stamp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3.5M12 18.5V22M22 12h-3.5M5.5 12H2M18.7 5.3l-2.5 2.5M7.8 16.2l-2.5 2.5M18.7 18.7l-2.5-2.5M7.8 7.8L5.3 5.3"/></svg>
+          </div>
+          <div class="brand-text"><h2>Field Notes</h2><p>NEET 2027 · Dropper Year Log</p></div>
+        </div>
+        <div class="login-error" id="loginError" style="display:none;"></div>
+        <input type="email" id="loginEmail" class="login-input" placeholder="Email" required>
+        <input type="password" id="loginPassword" class="login-input" placeholder="Password" required>
+        <button type="submit" class="login-btn" id="loginSubmitBtn">Sign in</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="appRoot" class="hidden">
+
+  <div class="spectrum-strip"></div>
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-stamp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3.5M12 18.5V22M22 12h-3.5M5.5 12H2M18.7 5.3l-2.5 2.5M7.8 16.2l-2.5 2.5M18.7 18.7l-2.5-2.5M7.8 7.8L5.3 5.3"/></svg>
+      </div>
+      <div class="brand-text">
+        <h2>Field Notes</h2>
+        <p>NEET 2027 · Dropper Year Log</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-daybadge">
+        <span>Day <b id="badgeDay">—</b></span>
+        <span class="sep"></span>
+        <span><b id="badgeRemaining">—</b> left</span>
+      </div>
+      <div class="topbar-date" id="todayDate">—</div>
+      <button class="bell-btn" id="searchBtn" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <button class="journal-nav-btn" id="journalNavBtn">Journal</button>
+      <button class="bell-btn" id="bellBtn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="bell-dot" id="bellDot"></span>
+      </button>
+      <button class="signout-btn" id="signOutBtn">Sign out</button>
+      <div class="notif-panel" id="notifPanel"><div class="notif-head">Today's notices</div><div id="notifList"></div></div>
+    </div>
+  </div>
+
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+      <div class="search-input-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Search notes, resources, journal, backlog, schedule…">
+        <span class="search-esc">ESC</span>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+
+  <!-- ================= HOME VIEW ================= -->
+  <div id="homeView">
+    <div class="wrap">
+      <div class="hero" id="dashboardSection">
+        <p class="eyebrow">Personal research log · Not a coaching app</p>
+        <h1>Today's <em>field entry.</em></h1>
+        <p class="lede">Everything that matters today, in one place — the plan, what's actually done, what got pushed, and where every subject stands.</p>
+        <div class="hero-goal">
+          <span class="hero-goal-item"><b>Goal</b> 700+ marks — a seat at AIIMS Delhi, and one day sitting across from media, sharing what this journey actually looked like.</span>
+          <span class="hero-goal-sep"></span>
+          <span class="hero-goal-item motto">"Don't just wait for the result. Record what it took to get there."</span>
+        </div>
+      </div>
+      <div class="stat-row" id="statRow"></div>
+      <div class="ruler-block">
+        <div class="ruler-label"><span>AUG 2026 · FOUNDATION</span><span>MAY 2027 · EXAM (EST.)</span></div>
+        <div class="ruler"><div class="ruler-ticks" id="rulerTicks"></div><div class="ruler-fill" id="rulerFill"></div></div>
+      </div>
+      <div class="section-head" id="ledgerSection"><h2>Subject ledger</h2><span>CLICK A SUBJECT TO OPEN IT</span></div>
+      <div class="subject-grid" id="subjectGrid"></div>
+
+      <div class="section-head" id="weeklySection"><h2>Weekly planner</h2><span id="weekRangeLabel"></span></div>
+      <div class="week-grid" id="weekGrid"></div>
+    </div>
+
+    <div class="wrap">
+      <div class="main-grid">
+        <div>
+          <div class="panel" id="scheduleSection"><div class="panel-head"><h2>Today's schedule</h2><span class="count mono" id="scheduleCount"></span></div>
+            <div class="panel-body">
+              <div class="note-form-row" style="margin-bottom:12px;">
+                <input type="text" id="schedTitle" placeholder="Add a task for today…">
+                <select id="schedSubject">
+                  <option>Physics</option><option>Physical Chemistry</option><option>Inorganic Chemistry</option><option>Organic Chemistry</option><option>Botany</option><option>Zoology</option>
+                </select>
+                <select id="schedType"><option value="lecture">Lecture</option><option value="revision">Revision</option><option value="test">Test</option></select>
+                <button class="note-add-btn" id="schedAddBtn">+ Add</button>
+              </div>
+              <div id="scheduleList"></div>
+            </div>
+          </div>
+          <div class="panel" id="revisionSection"><div class="panel-head"><h2>Revision queue</h2><span class="count mono" id="revisionCount"></span></div><div class="panel-body" id="revisionList"></div></div>
+          <div class="panel" id="backlogSection"><div class="panel-head"><h2>Backlog</h2><span class="count mono" id="backlogCount"></span></div><div class="panel-body" id="backlogList"></div></div>
+        </div>
+        <div>
+          <div class="panel" id="calendarSection">
+            <div class="panel-head"><h2>Calendar</h2>
+              <div class="cal-nav">
+                <button id="calPrev" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <span class="mono" id="calMonthLabel" style="font-size:11px;color:var(--ink-soft);"></span>
+                <button id="calNext" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></button>
+              </div>
+            </div>
+            <div class="panel-body"><div class="cal-grid" id="calGrid"></div><div class="cal-agenda" id="calAgenda"></div></div>
+          </div>
+          <div class="panel" id="notesSection">
+            <div class="panel-head"><h2>Notes</h2><span class="count mono" id="notesCount"></span></div>
+            <div class="panel-body">
+              <div class="note-form">
+                <div class="note-form-row"><input type="text" id="noteTitle" placeholder="Note title…"><select id="noteSubject"></select></div>
+                <textarea id="noteBody" placeholder="Write the note…"></textarea>
+                <button class="note-add-btn" id="noteAddBtn">+ Add note</button>
+              </div>
+              <div id="notesList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="philosophy"><div class="philosophy-inner">
+      <p class="philosophy-quote">Don't just wait <span class="mark">for the result.</span> Record what it took <span class="mark">to get there.</span></p>
+      <span class="philosophy-tag">Process over outcome</span>
+    </div></div>
+  </div>
+
+  <!-- ================= SUBJECT DETAIL VIEW ================= -->
+  <div id="subjectView">
+    <div class="wrap">
+      <button class="back-btn" id="backBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Back to dashboard</button>
+      <div class="subj-detail-head"><span class="subj-detail-chip" id="detailChip"></span><h1 id="detailName"></h1></div>
+      <div class="subj-detail-group" id="detailGroup"></div>
+
+      <div class="detail-stat-row" id="detailStatRow"></div>
+
+      <div class="detail-two-col">
+        <div class="panel"><div class="panel-head"><h2>Lectures & revision</h2><span class="count mono" id="detailLecCount"></span></div><div class="panel-body" id="detailLecList"></div></div>
+        <div class="panel"><div class="panel-head"><h2>Tests</h2><span class="count mono" id="detailTestCount"></span></div><div class="panel-body" id="detailTestList"></div></div>
+      </div>
+      <div class="detail-two-col">
+        <div class="panel"><div class="panel-head"><h2>Notes</h2><span class="count mono" id="detailNoteCount"></span></div><div class="panel-body" id="detailNoteList"></div></div>
+        <div class="panel"><div class="panel-head"><h2>Backlog</h2><span class="count mono" id="detailBacklogCount"></span></div><div class="panel-body" id="detailBacklogList"></div></div>
+      </div>
+
+      <div class="section-head"><h2>Resources</h2><span id="detailResCount"></span></div>
+      <div class="res-tabs" id="resTabs"></div>
+      <div class="res-form">
+        <div class="res-form-grid">
+          <input type="text" id="resTitle" placeholder="Resource title (e.g. NCERT Ch.9 — Mechanical Properties)">
+          <select id="resType">
+            <option>PDF</option><option>Book</option><option>Test Paper</option><option>Notes</option><option>Lecture</option><option>Other</option>
+          </select>
+          <input type="text" id="resLink" placeholder="Link, file location, or a short note (optional)">
+        </div>
+        <button class="note-add-btn" id="resAddBtn">+ Add resource</button>
+      </div>
+      <div class="res-grid" id="resGrid"></div>
+
+    </div>
+    <div style="height:60px"></div>
+  </div>
+
+  <!-- ================= JOURNAL VIEW ================= -->
+  <div id="journalView">
+    <div class="wrap">
+      <button class="back-btn" id="journalBackBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Back to dashboard</button>
+      <div class="section-head"><h2>Journal & reflection</h2><span>THE PART A SCORE CAN'T SHOW</span></div>
+
+      <div class="journal-two-col">
+        <div class="panel">
+          <div class="panel-head"><h2>Today's entry</h2></div>
+          <div class="panel-body">
+            <p class="mono" style="font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--pencil); margin:10px 0 4px;">Mood today</p>
+            <div class="mood-row" id="moodRow"></div>
+            <textarea id="journalText" placeholder="What actually happened today — a thought, a win, a bad hour, anything worth keeping…" style="width:100%; min-height:80px; font-family:'Lora',serif; font-size:13.5px; border:1px solid var(--line); border-radius:3px; padding:10px 12px; resize:vertical;"></textarea>
+            <div class="upload-zone" id="uploadZone" style="margin-top:10px;">
+              📎 Click to add a photo or video from today
+              <input type="file" id="mediaInput" accept="image/*,video/*" multiple style="display:none;">
+            </div>
+            <div class="media-preview-row" id="mediaPreview"></div>
+            <button class="note-add-btn" id="journalAddBtn" style="margin-top:12px;">+ Save today's entry</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Past entries</h2><span class="count mono" id="journalCount"></span></div>
+          <div class="panel-body" id="journalList"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:26px;">
+        <div class="panel-head"><h2>Mood trend</h2><span class="count mono">LAST 14 DAYS</span></div>
+        <div class="panel-body" style="padding-top:14px;">
+          <div class="mood-trend-wrap">
+            <div class="mood-trend-bars" id="moodTrendBars"></div>
+            <div class="mood-trend-legend" id="moodTrendLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="journal-two-col">
+        <div class="panel">
+          <div class="panel-head"><h2>Distraction log</h2><span class="count mono" id="distCount"></span></div>
+          <div class="panel-body">
+            <div class="dist-form">
+              <input type="text" id="distDesc" placeholder="What pulled you away?">
+              <input type="number" id="distDuration" placeholder="Minutes">
+              <select id="distSubject"></select>
+              <button class="sw-add-btn" id="distAddBtn">+</button>
+            </div>
+            <div id="distList"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Strengths & weaknesses</h2></div>
+          <div class="panel-body">
+            <div class="sw-grid">
+              <div class="sw-col strength">
+                <h4>Strengths</h4>
+                <div class="sw-form"><input type="text" id="strengthInput" placeholder="Topic…"><select id="strengthSubject"></select><button class="sw-add-btn" id="strengthAddBtn">+</button></div>
+                <div id="strengthList"></div>
+              </div>
+              <div class="sw-col weakness">
+                <h4>Weaknesses</h4>
+                <div class="sw-form"><input type="text" id="weaknessInput" placeholder="Topic…"><select id="weaknessSubject"></select><button class="sw-add-btn" id="weaknessAddBtn">+</button></div>
+                <div id="weaknessList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head"><h2>Auto-summary</h2><span>PATTERNS, NOT JUST LOGS</span></div>
+      <div class="summary-tabs" id="summaryTabs"></div>
+      <div class="summary-box">
+        <p class="summary-text" id="summaryText"></p>
+        <p class="summary-note" id="summaryNote">Generating…</p>
+      </div>
+    </div>
+    <div style="height:60px"></div>
+  </div>
+
+  <footer>
+    <div class="foot-nav">
+      <div>
+        <div class="foot-brand-mark">
+          <div class="foot-stamp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3.5M12 18.5V22M22 12h-3.5M5.5 12H2M18.7 5.3l-2.5 2.5M7.8 16.2l-2.5 2.5M18.7 18.7l-2.5-2.5M7.8 7.8L5.3 5.3"/></svg></div>
+          <h3>Field Notes</h3>
+        </div>
+        <p class="foot-tagline">A record of the year between here and NEET 2027 — the whole specimen, not just the result.</p>
+      </div>
+
+      <div class="foot-col">
+        <h4>Navigate</h4>
+        <ul>
+          <li><button data-scroll="dashboardSection">Dashboard</button></li>
+          <li><button data-scroll="ledgerSection">Subject ledger</button></li>
+          <li><button data-scroll="weeklySection">Weekly planner</button></li>
+          <li><button data-scroll="scheduleSection">Today's schedule</button></li>
+          <li><button data-scroll="backlogSection">Backlog</button></li>
+          <li><button data-scroll="calendarSection">Calendar</button></li>
+          <li><button data-scroll="notesSection">Notes</button></li>
+          <li><button id="footJournalBtn">Journal & reflection</button></li>
+        </ul>
+      </div>
+
+      <div class="foot-col">
+        <h4>Subjects</h4>
+        <ul id="footSubjectNav"></ul>
+      </div>
+
+      <div class="foot-col">
+        <h4>This year</h4>
+        <ul>
+          <li><span class="dot" style="background:var(--gold)"></span>Started Aug 2026</li>
+          <li><span class="dot" style="background:var(--rust)"></span>NEET 2027 · early May (est.)</li>
+          <li><span class="dot" style="background:var(--green)"></span>West Bengal</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>NEET 2027 · WEST BENGAL</span>
+      <span>PROCESS OVER OUTCOME</span>
+    </div>
+  </footer>
+
+  </div><!-- /#appRoot -->
+
+<script type="module">
+  /* ============ FIREBASE SETUP ============ */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import {
+    getStorage, ref as storageRef, uploadBytes
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+
+  // Fill in your own Firebase config here (Firebase Console → Project Settings → General → Your apps)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBcmxJSdGMKJQ7afl8SUGGAWLEamKupEns",
+    authDomain: "neet-tracker-b6ecb.firebaseapp.com",
+    projectId: "neet-tracker-b6ecb",
+    storageBucket: "neet-tracker-b6ecb.firebasestorage.app",
+    messagingSenderId: "859300640772",
+    appId: "1:859300640772:web:6b1b2d84dfd59187f8dd51",
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  const auth = getAuth(fbApp);
+  const db = getFirestore(fbApp);
+  const storage = getStorage(fbApp);
+  let currentUser = null;
+
+  /* ============ LOGIN GATE ============ */
+  const loginGate = document.getElementById('loginGate');
+  const appRoot = document.getElementById('appRoot');
+  const loginForm = document.getElementById('loginForm');
+  const loginError = document.getElementById('loginError');
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginError.style.display = 'none';
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      loginError.textContent = err.message || 'Login failed';
+      loginError.style.display = 'block';
+    }
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      loginGate.classList.add('hidden');
+      appRoot.classList.remove('hidden');
+      await loadAllData();
+      initialRenderAll();
+    } else {
+      currentUser = null;
+      loginGate.classList.remove('hidden');
+      appRoot.classList.add('hidden');
+    }
+  });
+
+  /* ============ SUBJECT TAXONOMY ============ */
+  const SUBJECTS = [
+    { name:'Physics',              group:'Physics',   color:'var(--s-physics)' },
+    { name:'Physical Chemistry',   group:'Chemistry', color:'var(--s-pchem)'   },
+    { name:'Inorganic Chemistry',  group:'Chemistry', color:'var(--s-ichem)'   },
+    { name:'Organic Chemistry',    group:'Chemistry', color:'var(--s-ochem)'   },
+    { name:'Botany',               group:'Biology',   color:'var(--s-botany)' },
+    { name:'Zoology',              group:'Biology',   color:'var(--s-zoology)' },
+  ];
+  const subjColor = (name)=> (SUBJECTS.find(s=>s.name===name)||{}).color || 'var(--pencil)';
+  const RES_TYPES = ['PDF','Book','Test Paper','Notes','Lecture','Other'];
+  const resColor = (type)=> ({ 'PDF':'var(--r-pdf)','Book':'var(--r-book)','Test Paper':'var(--r-paper)','Notes':'var(--r-notes)','Lecture':'var(--r-lecture)','Other':'var(--r-other)' }[type] || 'var(--r-other)');
+
+  /* ============ DATE / EXAM COUNTDOWN ============ */
+  const START = new Date('2026-08-04');
+  const EXAM_EST = new Date('2027-05-03');
+  const today = new Date(); today.setHours(0,0,0,0);
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+  const totalDays = Math.round((EXAM_EST-START)/86400000);
+  const elapsed = Math.max(0, Math.round((today-START)/86400000)) + 1;
+  const remaining = Math.max(0, Math.round((EXAM_EST-today)/86400000));
+  document.getElementById('badgeDay').textContent = elapsed;
+  document.getElementById('badgeRemaining').textContent = remaining;
+
+  /* ============ REAL DATA (Firestore) ============ */
+  let schedule = [];
+  let backlog = [];
+  let notes = [];
+  let tests = [];
+  let subjectProgress = {
+    'Physics': { pct:0, lecturesDone:0, avgTest:null },
+    'Physical Chemistry': { pct:0, lecturesDone:0, avgTest:null },
+    'Inorganic Chemistry': { pct:0, lecturesDone:0, avgTest:null },
+    'Organic Chemistry': { pct:0, lecturesDone:0, avgTest:null },
+    'Botany': { pct:0, lecturesDone:0, avgTest:null },
+    'Zoology': { pct:0, lecturesDone:0, avgTest:null },
+  };
+  let resources = { 'Physics':[], 'Physical Chemistry':[], 'Inorganic Chemistry':[], 'Organic Chemistry':[], 'Botany':[], 'Zoology':[] };
+  let notifications = [];
+  let testsTakenThisWeek = 0;
+  let currentSubject = null;
+  let activeResTab = 'All';
+  let revisionQueue = [];
+  let journalEntries = [];
+  let distractions = [];
+  let strengths = [];
+  let weaknesses = [];
+  let allScheduleItems = [];
+
+  const todayStrFn = () => new Date().toISOString().slice(0,10);
+  const daysBetween = (a,b) => Math.round((new Date(a) - new Date(b)) / 86400000);
+
+  async function loadAllData(){
+    const uid = currentUser.uid;
+    const todayIso = todayStrFn();
+
+    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap] = await Promise.all([
+      getDocs(query(collection(db,'scheduleItems'), where('userId','==',uid))),
+      getDocs(query(collection(db,'notes'), where('userId','==',uid))),
+      getDocs(query(collection(db,'tests'), where('userId','==',uid))),
+      getDocs(query(collection(db,'resources'), where('userId','==',uid))),
+      getDocs(query(collection(db,'revisions'), where('userId','==',uid))),
+      getDocs(query(collection(db,'journalEntries'), where('userId','==',uid))),
+      getDocs(query(collection(db,'distractions'), where('userId','==',uid))),
+      getDocs(query(collection(db,'strengthsWeaknesses'), where('userId','==',uid))),
+      getDocs(query(collection(db,'subjectProgress'), where('userId','==',uid))),
+    ]);
+
+    const allScheduleDocs = schedSnap.docs.map(d=>({ id:d.id, ...d.data() }));
+    allScheduleItems = allScheduleDocs;
+    schedule = allScheduleDocs.filter(s=>s.date===todayIso);
+    backlog = allScheduleDocs
+      .filter(s => s.date < todayIso && !s.done)
+      .map(s => ({ id:s.id, title:s.title, subject:s.subject, daysOld: Math.max(0, daysBetween(todayIso, s.date)) }));
+    notes = noteSnap.docs.map(d=>({ id:d.id, ...d.data() }));
+    tests = testSnap.docs.map(d=>({ id:d.id, ...d.data() }));
+
+    resources = { 'Physics':[], 'Physical Chemistry':[], 'Inorganic Chemistry':[], 'Organic Chemistry':[], 'Botany':[], 'Zoology':[] };
+    resSnap.docs.forEach(d=>{ const r=d.data(); if(!resources[r.subject]) resources[r.subject]=[]; resources[r.subject].push({ id:d.id, type:r.type, title:r.title, link:r.link, note:r.note||'' }); });
+
+    revisionQueue = revSnap.docs.map(d=>({ id:d.id, ...d.data() }))
+      .filter(r => !r.completedDate && r.scheduledDate <= todayIso)
+      .map(r => {
+        const overdueDays = daysBetween(todayIso, r.scheduledDate);
+        return { id:r.id, subject:r.subject, topic:r.topic, reviewCount:r.reviewCount||0, due: overdueDays>0?'overdue':'today', daysOverdue: Math.max(0,overdueDays) };
+      });
+
+    journalEntries = jSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.date < b.date ? 1 : -1));
+    distractions = distSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.date < b.date ? 1 : -1));
+    strengths = swSnap.docs.map(d=>({ id:d.id, ...d.data() })).filter(s=>s.type==='strength');
+    weaknesses = swSnap.docs.map(d=>({ id:d.id, ...d.data() })).filter(s=>s.type==='weakness');
+
+    testsTakenThisWeek = tests.filter(t=>{ const days = daysBetween(todayIso, t.date); return days>=0 && days<=7; }).length;
+
+    progSnap.docs.forEach(d=>{ const p=d.data(); if(subjectProgress[p.subject]) subjectProgress[p.subject].pct = p.pct||0; });
+    SUBJECTS.forEach(s=>{
+      const subjTests = tests.filter(t=>t.subject===s.name);
+      subjectProgress[s.name].avgTest = subjTests.length ? Math.round(subjTests.reduce((a,t)=>a+(t.score/t.max*100),0)/subjTests.length) : null;
+      subjectProgress[s.name].lecturesDone = schedSnap.docs.map(d=>d.data()).filter(sc=>sc.subject===s.name && sc.type==='lecture' && sc.done).length;
+    });
+
+    notifications = [];
+    revisionQueue.forEach(r=> notifications.push({ t:'Revision due', m:`${r.topic} (${r.subject}) is due for review.`, warn:false }));
+    backlog.forEach(b=>{ if(b.daysOld>=2) notifications.push({ t:'Backlog aging', m:`"${b.title}" (${b.subject}) has been pending ${b.daysOld} days — reschedule it.`, warn:true }); });
+  }
+
+  document.getElementById('noteSubject').innerHTML = SUBJECTS.map(s=>`<option>${s.name}</option>`).join('');
+
+
+  /* ============ STAT DASHBOARD (home) ============ */
+  function renderStats(){
+    const lecDone = schedule.filter(s=>s.type==='lecture' && s.done).length;
+    const lecTotal = schedule.filter(s=>s.type==='lecture').length;
+    const backlogN = backlog.length;
+    const progressPct = Math.round((elapsed/totalDays)*100);
+    const stats = [
+      { label:'Days to exam', val:remaining, unit:'days', sub:`Day ${elapsed} of ~${totalDays}`, cls:'' },
+      { label:"Lectures today", val:lecDone, unit:`/ ${lecTotal}`, sub: lecDone===lecTotal?'All done ✓':`${lecTotal-lecDone} remaining`, cls: lecDone===lecTotal?'':'gold' },
+      { label:'Tests this week', val:testsTakenThisWeek, unit:'taken', sub:'+1 scheduled tonight', cls:'' },
+      { label:'Backlog items', val:backlogN, unit:'open', sub: backlogN>0?'Needs reschedule':'Clear', cls: backlogN>0?'rust':'', subWarn: backlogN>0 },
+      { label:'Syllabus progress', val:progressPct, unit:'%', sub:'Time elapsed', cls:'' },
+    ];
+    document.getElementById('statRow').innerHTML = stats.map(s=>`
+      <div class="stat-card ${s.cls}"><div class="stat-label">${s.label}</div><div class="stat-val">${s.val} <span>${s.unit}</span></div><div class="stat-sub ${s.subWarn?'warn':''}">${s.sub}</div></div>`).join('');
+  }
+  document.getElementById('rulerTicks').innerHTML = Array.from({length:30}).map(()=>'<span></span>').join('');
+  document.getElementById('rulerFill').style.width = Math.min(100, Math.max(2,(elapsed/totalDays)*100)) + '%';
+
+  /* ============ SUBJECT LEDGER (home, clickable) ============ */
+  function renderSubjectGrid(){
+    document.getElementById('subjectGrid').innerHTML = SUBJECTS.map(s=>{
+      const prog = subjectProgress[s.name];
+      const notesN = notes.filter(n=>n.subject===s.name).length;
+      const backlogNForSubj = backlog.filter(b=>b.subject===s.name).length;
+      return `
+      <button class="subj-card" data-subject="${s.name}">
+        <span class="subj-open">OPEN →</span>
+        <span class="subj-chip" style="background:${s.color}"></span><span class="subj-name">${s.name}</span>
+        <div class="subj-group">${s.group}</div>
+        <div class="subj-bar-track"><div class="subj-bar-fill" style="width:${prog.pct}%; background:${s.color}"></div></div>
+        <div class="subj-meta-row">
+          <div><b>${prog.pct}%</b>syllabus</div>
+          <div><b>${prog.lecturesDone}</b>lectures</div>
+          <div><b>${notesN}</b>notes</div>
+          <div><b class="${backlogNForSubj>0?'warn-n':''}">${backlogNForSubj}</b>backlog</div>
+          <div><b>${prog.avgTest!==null?prog.avgTest+'%':'—'}</b>avg test</div>
+        </div>
+      </button>`;
+    }).join('');
+    document.querySelectorAll('.subj-card').forEach(el=> el.addEventListener('click', ()=>openSubject(el.dataset.subject)));
+  }
+
+  /* ============ SCHEDULE (home) ============ */
+  function renderSchedule(){
+    const list = document.getElementById('scheduleList');
+    document.getElementById('scheduleCount').textContent = schedule.filter(s=>s.done).length + ' / ' + schedule.length + ' DONE';
+    if(schedule.length===0){ list.innerHTML = '<div class="empty-note">Nothing scheduled — add a plan for today.</div>'; return; }
+    list.innerHTML = schedule.map(s=>`
+      <div class="task-row">
+        <div class="task-check ${s.done?'done':''}" data-id="${s.id}" role="checkbox" aria-checked="${s.done}" tabindex="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(s.subject)}"></span>${s.subject} · ${s.type}</div></div>
+        <div class="task-time mono">${s.time}</div>
+      </div>`).join('');
+    list.querySelectorAll('.task-check').forEach(el=>{
+      el.addEventListener('click', ()=>toggleTask(el.dataset.id));
+      el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleTask(el.dataset.id); }});
+    });
+  }
+  async function toggleTask(id){
+    const item = schedule.find(s=>s.id===id); if(!item) return;
+    item.done = !item.done;
+    renderSchedule(); renderStats(); if(currentSubject) renderSubjectDetail(currentSubject);
+    await updateDoc(doc(db,'scheduleItems',id), { done: item.done });
+  }
+
+  document.getElementById('schedAddBtn').addEventListener('click', async ()=>{
+    const title = document.getElementById('schedTitle').value.trim();
+    if(!title) return;
+    const subject = document.getElementById('schedSubject').value;
+    const type = document.getElementById('schedType').value;
+    const data = { userId: currentUser.uid, date: todayStrFn(), time:'—', subject, type, title, done:false, createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'scheduleItems'), data);
+    schedule.push({ id: ref.id, ...data });
+    document.getElementById('schedTitle').value = '';
+    renderSchedule(); renderStats(); renderSubjectGrid();
+  });
+
+  /* ============ BACKLOG (home) ============ */
+  function renderBacklog(){
+    const list = document.getElementById('backlogList');
+    document.getElementById('backlogCount').textContent = backlog.length + ' OPEN';
+    if(backlog.length===0){ list.innerHTML = '<div class="empty-note">Backlog clear — nothing carried over.</div>'; return; }
+    list.innerHTML = backlog.map(b=>`
+      <div class="backlog-row"><span class="backlog-age">${b.daysOld}d old</span>
+        <div class="backlog-main"><div class="backlog-title">${b.title}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(b.subject)}"></span>${b.subject}</div></div>
+        <button class="backlog-btn" data-id="${b.id}">Move to today</button></div>`).join('');
+    list.querySelectorAll('.backlog-btn').forEach(btn=> btn.addEventListener('click', ()=>moveToToday(btn.dataset.id)));
+  }
+  async function moveToToday(id){
+    const idx = backlog.findIndex(b=>b.id===id); if(idx===-1) return;
+    const item = backlog[idx]; backlog.splice(idx,1);
+    const newDate = todayStrFn();
+    schedule.push({ id, userId: currentUser.uid, date:newDate, time:'—', subject:item.subject, type:'revision', title:item.title, done:false });
+    renderBacklog(); renderSchedule(); renderStats(); renderSubjectGrid();
+    if(currentSubject) renderSubjectDetail(currentSubject);
+    await updateDoc(doc(db,'scheduleItems',id), { date: newDate });
+  }
+
+  /* ============ NOTES (home) ============ */
+  function renderNotes(){
+    document.getElementById('notesCount').textContent = notes.length + ' SAVED';
+    document.getElementById('notesList').innerHTML = notes.map(n=>`
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span></div>
+      <div class="note-item-body">${n.body}</div><div class="note-item-date">${n.date}</div></div>`).join('');
+  }
+  document.getElementById('noteAddBtn').addEventListener('click', async ()=>{
+    const title = document.getElementById('noteTitle').value.trim();
+    const body = document.getElementById('noteBody').value.trim();
+    const subject = document.getElementById('noteSubject').value;
+    if(!title || !body) return;
+    const data = { userId: currentUser.uid, title, subject, body, date:'Today', createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'notes'), data);
+    notes.unshift({ id: ref.id, ...data });
+    document.getElementById('noteTitle').value=''; document.getElementById('noteBody').value='';
+    renderNotes(); renderSubjectGrid();
+  });
+
+  /* ============ CALENDAR (home) ============ */
+  let calDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  let selectedDay = today.getDate();
+  let selectedMonthKey = `${today.getFullYear()}-${today.getMonth()}`;
+
+  function dayIsoFor(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  function agendaForIso(iso){
+    return [
+      ...allScheduleItems.filter(s=>s.date===iso).map(s=>({subject:s.subject, text:s.title})),
+      ...tests.filter(t=>t.date===iso).map(t=>({subject:t.subject, text:t.name})),
+      ...revisionQueue.filter(r=>r.scheduledDate===iso).map(r=>({subject:r.subject, text:r.topic})),
+    ];
+  }
+
+  function renderCalendar(){
+    const y = calDate.getFullYear(), m = calDate.getMonth();
+    document.getElementById('calMonthLabel').textContent = calDate.toLocaleDateString('en-GB',{month:'short',year:'numeric'}).toUpperCase();
+    const firstDow = new Date(y,m,1).getDay();
+    const daysInMonth = new Date(y,m+1,0).getDate();
+    let html = ['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+    for(let i=0;i<firstDow;i++) html += '<div class="cal-cell muted"></div>';
+    for(let d=1; d<=daysInMonth; d++){
+      const iso = dayIsoFor(y,m,d);
+      const isToday = iso === todayStrFn();
+      const isSelected = d===selectedDay && selectedMonthKey===`${y}-${m}`;
+      const agenda = agendaForIso(iso);
+      const hasLec = allScheduleItems.some(s=>s.date===iso);
+      const hasTest = tests.some(t=>t.date===iso) || revisionQueue.some(r=>r.scheduledDate===iso);
+      html += `<div class="cal-cell ${isToday?'today':''} ${isSelected&&!isToday?'selected':''}" data-day="${d}">${d}
+        <div class="cal-dots">${hasLec?'<span style="background:var(--s-botany)"></span>':''}${hasTest?'<span style="background:var(--s-ochem)"></span>':''}</div></div>`;
+    }
+    document.getElementById('calGrid').innerHTML = html;
+    document.querySelectorAll('.cal-cell:not(.muted)').forEach(el=>{
+      el.addEventListener('click', ()=>{ selectedDay = parseInt(el.dataset.day); selectedMonthKey = `${y}-${m}`; renderCalendar(); });
+    });
+    renderAgenda(selectedDay, y, m);
+  }
+  function renderAgenda(day, y, m){
+    const box = document.getElementById('calAgenda');
+    if(!day){ box.innerHTML = `<div class="cal-agenda-date">—</div><div class="empty-note">No log for this view yet.</div>`; return; }
+    const iso = dayIsoFor(y,m,day);
+    const items = agendaForIso(iso);
+    box.innerHTML = `<div class="cal-agenda-date">${calDate.toLocaleDateString('en-GB',{month:'short'})} ${day} — AGENDA</div>` +
+      (items.length ? items.map(i=>`<div class="cal-agenda-item"><span class="dot" style="background:${subjColor(i.subject)}"></span><span class="tag mono">${i.subject}</span>${i.text}</div>`).join('') : `<div class="empty-note">Nothing logged for this day.</div>`);
+  }
+  document.getElementById('calPrev').addEventListener('click', ()=>{ calDate.setMonth(calDate.getMonth()-1); selectedDay=null; renderCalendar(); });
+  document.getElementById('calNext').addEventListener('click', ()=>{ calDate.setMonth(calDate.getMonth()+1); selectedDay=null; renderCalendar(); });
+
+  /* ============ NOTIFICATIONS ============ */
+  document.getElementById('notifList').innerHTML = notifications.map(n=>`<div class="notif-item ${n.warn?'warn':''}"><div class="t">${n.t}</div><div class="m">${n.m}</div></div>`).join('');
+  const bellBtn = document.getElementById('bellBtn');
+  const notifPanel = document.getElementById('notifPanel');
+  bellBtn.addEventListener('click', (e)=>{ e.stopPropagation(); notifPanel.classList.toggle('open'); document.getElementById('bellDot').style.display='none'; });
+  document.addEventListener('click', (e)=>{ if(!notifPanel.contains(e.target) && e.target!==bellBtn) notifPanel.classList.remove('open'); });
+
+  /* ============ SUBJECT DETAIL VIEW ============ */
+  function openSubject(name){
+    currentSubject = name;
+    activeResTab = 'All';
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('subjectView').style.display = 'block';
+    window.scrollTo(0,0);
+    renderSubjectDetail(name);
+  }
+  function closeSubject(){
+    currentSubject = null;
+    document.getElementById('subjectView').style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+    window.scrollTo(0,0);
+  }
+  document.getElementById('backBtn').addEventListener('click', closeSubject);
+
+  function renderSubjectDetail(name){
+    const meta = SUBJECTS.find(s=>s.name===name);
+    const prog = subjectProgress[name];
+    document.getElementById('detailChip').style.background = meta.color;
+    document.getElementById('detailName').textContent = name;
+    document.getElementById('detailGroup').textContent = meta.group + ' SECTION';
+
+    const subjNotes = notes.filter(n=>n.subject===name);
+    const subjBacklog = backlog.filter(b=>b.subject===name);
+    const subjTests = tests.filter(t=>t.subject===name);
+    const subjLec = schedule.filter(s=>s.subject===name && (s.type==='lecture'||s.type==='revision'));
+    const avgScore = subjTests.length ? Math.round(subjTests.reduce((a,t)=>a+(t.score/t.max*100),0)/subjTests.length) : prog.avgTest;
+
+    document.getElementById('detailStatRow').innerHTML = [
+      { label:'Syllabus done', val:prog.pct, unit:'%', sub:'Chapter-wise', cls:'' },
+      { label:'Lectures logged', val:prog.lecturesDone, unit:'total', sub:`${subjLec.filter(s=>s.done).length} done today`, cls:'' },
+      { label:'Notes saved', val:subjNotes.length, unit:'entries', sub:'This subject', cls:'gold' },
+      { label:'Backlog', val:subjBacklog.length, unit:'open', sub: subjBacklog.length>0?'Needs attention':'Clear', cls: subjBacklog.length>0?'rust':'', subWarn: subjBacklog.length>0 },
+      { label:'Avg test score', val: avgScore!==null?avgScore:'—', unit: avgScore!==null?'%':'', sub:`${subjTests.length} tests logged`, cls:'' },
+    ].map(s=>`<div class="stat-card ${s.cls}"><div class="stat-label">${s.label}</div><div class="stat-val">${s.val} <span>${s.unit}</span></div><div class="stat-sub ${s.subWarn?'warn':''}">${s.sub}</div></div>`).join('');
+
+    document.getElementById('detailLecCount').textContent = subjLec.length + ' LOGGED';
+    document.getElementById('detailLecList').innerHTML = subjLec.length ? subjLec.map(s=>`
+      <div class="task-row"><div class="task-check ${s.done?'done':''}" style="cursor:default;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag">${s.type}</div></div><div class="task-time mono">${s.time}</div></div>`).join('')
+      : '<div class="empty-note">No lectures logged yet for this subject.</div>';
+
+    document.getElementById('detailTestCount').textContent = subjTests.length + ' TAKEN';
+    document.getElementById('detailTestList').innerHTML = subjTests.length ? subjTests.map(t=>`
+      <div class="test-row"><div><div class="test-name">${t.name}</div><div class="test-date">${t.date}</div></div><div class="test-score">${t.score}<span>/${t.max}</span></div></div>`).join('')
+      : '<div class="empty-note">No tests logged yet for this subject.</div>';
+
+    document.getElementById('detailNoteCount').textContent = subjNotes.length + ' SAVED';
+    document.getElementById('detailNoteList').innerHTML = subjNotes.length ? subjNotes.map(n=>`
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span></div><div class="note-item-body">${n.body}</div><div class="note-item-date">${n.date}</div></div>`).join('')
+      : '<div class="empty-note">No notes yet for this subject.</div>';
+
+    document.getElementById('detailBacklogCount').textContent = subjBacklog.length + ' OPEN';
+    document.getElementById('detailBacklogList').innerHTML = subjBacklog.length ? subjBacklog.map(b=>`
+      <div class="backlog-row"><span class="backlog-age">${b.daysOld}d old</span><div class="backlog-main"><div class="backlog-title">${b.title}</div></div>
+      <button class="backlog-btn" data-id="${b.id}">Move to today</button></div>`).join('')
+      : '<div class="empty-note">Backlog clear for this subject.</div>';
+    document.querySelectorAll('#detailBacklogList .backlog-btn').forEach(btn=> btn.addEventListener('click', ()=>{ moveToToday(btn.dataset.id); }));
+
+    renderResources(name);
+  }
+
+  function renderResources(name){
+    const all = resources[name] || [];
+    document.getElementById('detailResCount').textContent = all.length + ' ITEMS';
+    const tabs = ['All', ...RES_TYPES];
+    document.getElementById('resTabs').innerHTML = tabs.map(t=>{
+      const n = t==='All' ? all.length : all.filter(r=>r.type===t).length;
+      return `<button class="res-tab ${activeResTab===t?'active':''}" data-tab="${t}">${t} (${n})</button>`;
+    }).join('');
+    document.querySelectorAll('.res-tab').forEach(btn=> btn.addEventListener('click', ()=>{ activeResTab = btn.dataset.tab; renderResources(name); }));
+
+    const shown = activeResTab==='All' ? all : all.filter(r=>r.type===activeResTab);
+    document.getElementById('resGrid').innerHTML = shown.length ? shown.map(r=>`
+      <div class="res-card">
+        <span class="res-type-badge" style="background:${resColor(r.type)}">${r.type}</span>
+        <div class="res-title">${r.title}</div>
+        ${r.note ? `<div class="res-note">${r.note}</div>` : ''}
+        ${r.link ? `<a class="res-link" href="#" onclick="return false;">${r.link} ↗</a>` : `<span class="res-link disabled">No link attached</span>`}
+      </div>`).join('') : '<div class="empty-note">Nothing saved in this category yet.</div>';
+  }
+
+  document.getElementById('resAddBtn').addEventListener('click', async ()=>{
+    const title = document.getElementById('resTitle').value.trim();
+    const type = document.getElementById('resType').value;
+    const link = document.getElementById('resLink').value.trim();
+    if(!title || !currentSubject) return;
+    if(!resources[currentSubject]) resources[currentSubject] = [];
+    const data = { userId: currentUser.uid, subject: currentSubject, type, title, link, note:'', createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'resources'), data);
+    resources[currentSubject].unshift({ id: ref.id, type, title, link, note:'' });
+    document.getElementById('resTitle').value=''; document.getElementById('resLink').value='';
+    renderResources(currentSubject);
+  });
+
+  /* ============ REVISION QUEUE (homepage, cross-subject) ============ */
+  function renderRevisionQueue(){
+    const list = document.getElementById('revisionList');
+    document.getElementById('revisionCount').textContent = revisionQueue.length + ' DUE';
+    if(revisionQueue.length===0){ list.innerHTML = '<div class="empty-note">Nothing due — revision queue is clear.</div>'; return; }
+    list.innerHTML = revisionQueue.map(r=>`
+      <div class="rev-row">
+        <span class="rev-due ${r.due}">${r.due==='today' ? 'Due today' : r.daysOverdue+'d overdue'}</span>
+        <div class="rev-main"><div class="rev-title">${r.topic}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(r.subject)}"></span>${r.subject}</div></div>
+        <div class="rev-btns">
+          <button class="rev-btn hard" data-id="${r.id}" data-mode="hard">Hard</button>
+          <button class="rev-btn easy" data-id="${r.id}" data-mode="easy">Easy</button>
+        </div>
+      </div>`).join('');
+    list.querySelectorAll('.rev-btn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.id;
+        const mode = btn.dataset.mode;
+        const item = revisionQueue.find(r=>r.id===id);
+        revisionQueue = revisionQueue.filter(r=>r.id!==id);
+        renderRevisionQueue();
+        const INTERVALS = [1,3,7,14,30];
+        const nextCount = mode==='easy' ? Math.min((item.reviewCount||0)+1, INTERVALS.length-1) : 0;
+        const nextDate = new Date(); nextDate.setDate(nextDate.getDate()+INTERVALS[nextCount]);
+        await updateDoc(doc(db,'revisions',id), { reviewCount: nextCount, scheduledDate: nextDate.toISOString().slice(0,10), confidenceRating: mode==='easy'?4:2 });
+      });
+    });
+  }
+
+  /* ============ JOURNAL VIEW NAV ============ */
+  function openJournal(){
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('subjectView').style.display = 'none';
+    document.getElementById('journalView').style.display = 'block';
+    currentSubject = null;
+    window.scrollTo(0,0);
+  }
+  function closeJournal(){
+    document.getElementById('journalView').style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+    window.scrollTo(0,0);
+  }
+  document.getElementById('journalNavBtn').addEventListener('click', openJournal);
+  document.getElementById('journalBackBtn').addEventListener('click', closeJournal);
+  document.getElementById('footJournalBtn').addEventListener('click', openJournal);
+
+  /* populate subject <select> elements used inside the journal view */
+  ['distSubject','strengthSubject','weaknessSubject'].forEach(id=>{
+    document.getElementById(id).innerHTML = SUBJECTS.map(s=>`<option>${s.name}</option>`).join('');
+  });
+
+  /* ---- Mood picker ---- */
+  const MOODS = [ {v:1,e:'😩'}, {v:2,e:'😕'}, {v:3,e:'😐'}, {v:4,e:'🙂'}, {v:5,e:'😄'} ];
+  let selectedMood = 3;
+  function renderMoodRow(){
+    document.getElementById('moodRow').innerHTML = MOODS.map(m=>
+      `<button class="mood-btn ${m.v===selectedMood?'selected':''}" data-mood="${m.v}">${m.e}</button>`
+    ).join('');
+    document.querySelectorAll('.mood-btn').forEach(btn=> btn.addEventListener('click', ()=>{ selectedMood = parseInt(btn.dataset.mood); renderMoodRow(); }));
+  }
+
+  /* ---- Photo/video upload (real upload to Firebase Storage on save) ---- */
+  let pendingMedia = [];
+  document.getElementById('uploadZone').addEventListener('click', ()=> document.getElementById('mediaInput').click());
+  document.getElementById('mediaInput').addEventListener('change', (e)=>{
+    Array.from(e.target.files).forEach(file=>{
+      const url = URL.createObjectURL(file);
+      pendingMedia.push({ url, file, type: file.type.startsWith('video') ? 'video' : 'image' });
+    });
+    renderMediaPreview();
+  });
+  function renderMediaPreview(){
+    document.getElementById('mediaPreview').innerHTML = pendingMedia.map(m=>
+      m.type==='image' ? `<div class="media-thumb"><img src="${m.url}"></div>` : `<div class="media-thumb"><video src="${m.url}" muted></video></div>`
+    ).join('');
+  }
+
+  /* ---- Journal entries ---- */
+  function renderJournalList(){
+    document.getElementById('journalCount').textContent = journalEntries.length + ' ENTRIES';
+    document.getElementById('journalList').innerHTML = journalEntries.map(j=>`
+      <div class="journal-entry">
+        <div class="journal-entry-head"><span class="journal-entry-date">${j.date}</span><span class="journal-entry-mood">${(MOODS.find(m=>m.v===j.mood)||{}).e||''}</span></div>
+        <div class="journal-entry-text">${j.text}${j.mediaCount ? ` <span class="mono" style="font-size:10px;color:var(--pencil);">· ${j.mediaCount} attachment${j.mediaCount>1?'s':''}</span>` : ''}</div>
+      </div>`).join('');
+  }
+  document.getElementById('journalAddBtn').addEventListener('click', async ()=>{
+    const text = document.getElementById('journalText').value.trim();
+    if(!text) return;
+    const btn = document.getElementById('journalAddBtn');
+    btn.textContent = 'Saving…'; btn.disabled = true;
+
+    const mediaUrls = [];
+    for(const m of pendingMedia){
+      const path = `journal-media/${currentUser.uid}/${Date.now()}-${m.file.name}`;
+      const sref = storageRef(storage, path);
+      await uploadBytes(sref, m.file);
+      mediaUrls.push(path);
+    }
+
+    const data = { userId: currentUser.uid, date:'Today', mood:selectedMood, text, mediaCount:pendingMedia.length, mediaUrls, createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'journalEntries'), data);
+    journalEntries.unshift({ id: ref.id, ...data });
+
+    document.getElementById('journalText').value=''; pendingMedia=[]; renderMediaPreview();
+    selectedMood = 3; renderMoodRow();
+    renderJournalList();
+    btn.textContent = "+ Save today's entry"; btn.disabled = false;
+  });
+
+  /* ---- Distraction log ---- */
+  function renderDistList(){
+    document.getElementById('distCount').textContent = distractions.length + ' LOGGED';
+    document.getElementById('distList').innerHTML = distractions.length ? distractions.map(d=>`
+      <div class="dist-row"><span>${d.desc}</span><span class="dist-meta">${d.duration}m · ${d.subject}</span></div>`).join('')
+      : '<div class="empty-note">No distractions logged today.</div>';
+  }
+  document.getElementById('distAddBtn').addEventListener('click', async ()=>{
+    const desc = document.getElementById('distDesc').value.trim();
+    const duration = parseInt(document.getElementById('distDuration').value) || 0;
+    const subject = document.getElementById('distSubject').value;
+    if(!desc) return;
+    const data = { userId: currentUser.uid, desc, duration, subject, date: todayStrFn(), createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'distractions'), data);
+    distractions.unshift({ id: ref.id, ...data });
+    document.getElementById('distDesc').value=''; document.getElementById('distDuration').value='';
+    renderDistList();
+  });
+
+  /* ---- Strengths & weaknesses ---- */
+  function renderSW(){
+    document.getElementById('strengthList').innerHTML = strengths.map(s=>`<div class="sw-item"><span>${s.topic}<span class="subj">${s.subject}</span></span></div>`).join('') || '<div class="empty-note">None added yet.</div>';
+    document.getElementById('weaknessList').innerHTML = weaknesses.map(w=>`<div class="sw-item"><span>${w.topic}<span class="subj">${w.subject}</span></span></div>`).join('') || '<div class="empty-note">None added yet.</div>';
+  }
+  document.getElementById('strengthAddBtn').addEventListener('click', async ()=>{
+    const topic = document.getElementById('strengthInput').value.trim(); if(!topic) return;
+    const subject = document.getElementById('strengthSubject').value;
+    const data = { userId: currentUser.uid, topic, subject, type:'strength', createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'strengthsWeaknesses'), data);
+    strengths.unshift({ id: ref.id, ...data });
+    document.getElementById('strengthInput').value=''; renderSW();
+  });
+  document.getElementById('weaknessAddBtn').addEventListener('click', async ()=>{
+    const topic = document.getElementById('weaknessInput').value.trim(); if(!topic) return;
+    const subject = document.getElementById('weaknessSubject').value;
+    const data = { userId: currentUser.uid, topic, subject, type:'weakness', createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'strengthsWeaknesses'), data);
+    weaknesses.unshift({ id: ref.id, ...data });
+    document.getElementById('weaknessInput').value=''; renderSW();
+  });
+
+  /* ---- Auto-summary ---- */
+  let activeSummaryTab = 'Daily';
+
+  function buildDataSummary(period){
+    const lecDone = schedule.filter(s=>s.type==='lecture' && s.done).length;
+    const lecTotal = schedule.filter(s=>s.type==='lecture').length;
+    const distMins = distractions.reduce((a,d)=>a+d.duration,0);
+    const bySubjTests = {};
+    tests.forEach(t=>{ (bySubjTests[t.subject]=bySubjTests[t.subject]||[]).push(t); });
+    const avgs = Object.entries(bySubjTests).map(([s,list])=>`${s}: ${Math.round(list.reduce((a,t)=>a+(t.score/t.max*100),0)/list.length)}%`);
+    const progressPct = Math.round((elapsed/totalDays)*100);
+    return `
+Period: ${period}
+Lectures today: ${lecDone}/${lecTotal} done
+Backlog: ${backlog.length} items open
+Revisions due: ${revisionQueue.length}
+Distraction minutes logged: ${distMins}
+Tests taken (all time): ${tests.length}
+Average scores by subject: ${avgs.join(', ') || 'none logged'}
+Strengths noted: ${strengths.map(s=>s.topic).join(', ') || 'none'}
+Weaknesses noted: ${weaknesses.map(w=>w.topic).join(', ') || 'none'}
+Syllabus time-elapsed: ${progressPct}%
+`.trim();
+  }
+
+  function localFallbackSummary(period){
+    const lecDone = schedule.filter(s=>s.type==='lecture' && s.done).length;
+    const lecTotal = schedule.filter(s=>s.type==='lecture').length;
+    const distMins = distractions.reduce((a,d)=>a+d.duration,0);
+    if(period==='Daily'){
+      return `Today: ${lecDone} of ${lecTotal} planned lectures completed, ${backlog.length} item${backlog.length!==1?'s':''} still sitting in backlog, and ${distMins} minutes lost to distraction. ${revisionQueue.length} revision${revisionQueue.length!==1?'s':''} still due.`;
+    }
+    if(period==='Weekly'){
+      return `This week: ${testsTakenThisWeek} test${testsTakenThisWeek!==1?'s':''} taken, ${backlog.length} backlog item${backlog.length!==1?'s':''} open, ${distMins} distraction minutes logged.`;
+    }
+    const progressPct = Math.round((elapsed/totalDays)*100);
+    return `This month: syllabus time-elapsed at ${progressPct}%. ${tests.length} test${tests.length!==1?'s':''} logged in total, ${backlog.length} backlog item${backlog.length!==1?'s':''} currently open.`;
+  }
+
+  async function generateSummary(period){
+    const dataSummary = buildDataSummary(period);
+    try{
+      const res = await fetch('/api/summary', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ period, dataSummary })
+      });
+      if(!res.ok) throw new Error('api not ok');
+      const data = await res.json();
+      return { text: data.summary, note: data.note || '' };
+    }catch(err){
+      // Happens when testing the file locally (no /api route exists outside Vercel),
+      // or if the deployed function isn't reachable — falls back to local computed text.
+      return { text: localFallbackSummary(period), note: 'Generated locally — AI summary needs the deployed /api/summary endpoint (Vercel).' };
+    }
+  }
+  async function renderSummary(){
+    document.getElementById('summaryTabs').innerHTML = ['Daily','Weekly','Monthly'].map(t=>
+      `<button class="summary-tab ${activeSummaryTab===t?'active':''}" data-tab="${t}">${t}</button>`).join('');
+    document.querySelectorAll('.summary-tab').forEach(btn=> btn.addEventListener('click', ()=>{ activeSummaryTab=btn.dataset.tab; renderSummary(); }));
+    document.getElementById('summaryText').textContent = '';
+    document.getElementById('summaryNote').textContent = 'Generating…';
+    const { text, note } = await generateSummary(activeSummaryTab);
+    document.getElementById('summaryText').textContent = text;
+    document.getElementById('summaryNote').textContent = note || 'Generated via Anthropic API from your real logged data.';
+  }
+
+  /* ============ WEEKLY PLANNER ============ */
+  const DOW_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function renderWeeklyPlanner(){
+    const dow = today.getDay(); // 0=Sun
+    const mondayOffset = dow===0 ? -6 : 1-dow;
+    const monday = new Date(today); monday.setDate(today.getDate()+mondayOffset);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+    document.getElementById('weekRangeLabel').textContent =
+      monday.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}).toUpperCase() + ' – ' + sunday.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}).toUpperCase();
+
+    const order = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const todayName = DOW_NAMES[dow];
+    document.getElementById('weekGrid').innerHTML = order.map((d, i)=>{
+      const dayDate = new Date(monday); dayDate.setDate(monday.getDate() + i);
+      const dayIso = dayDate.toISOString().slice(0,10);
+      const items = allScheduleItems.filter(s => s.date === dayIso);
+      return `<div class="week-col ${d===todayName?'is-today':''}">
+        <div class="week-col-head">${d} ${dayDate.getDate()}</div>
+        ${items.length ? items.map(i=>`<div class="week-chip"><span class="dot" style="background:${subjColor(i.subject)}"></span>${i.title}</div>`).join('') : '<div class="week-empty">—</div>'}
+      </div>`;
+    }).join('');
+  }
+
+  /* ============ MOOD TREND ============ */
+  const moodHistory = [
+    {label:'22', mood:3},{label:'23', mood:4},{label:'24', mood:2},{label:'25', mood:3},
+    {label:'26', mood:4},{label:'27', mood:4},{label:'28', mood:3},{label:'29', mood:2},
+    {label:'30', mood:3},{label:'31', mood:4},{label:'01', mood:2},{label:'02', mood:4},
+    {label:'03', mood:3},{label:'04', mood:4},
+  ];
+  function moodColor(v){ return v<=2 ? 'var(--rust)' : v===3 ? 'var(--gold)' : 'var(--ok)'; }
+  function renderMoodTrend(){
+    document.getElementById('moodTrendBars').innerHTML = moodHistory.map(m=>`
+      <div class="mood-bar-col">
+        <div class="mood-bar" style="height:${m.mood*18}%; background:${moodColor(m.mood)}"></div>
+        <div class="mood-bar-label">${m.label}</div>
+      </div>`).join('');
+    document.getElementById('moodTrendLegend').innerHTML = `<span>Low</span><span>Aug 04 →</span><span>High</span>`;
+  }
+
+  /* ============ GLOBAL SEARCH ============ */
+  function buildSearchIndex(){
+    const items = [];
+    Object.entries(resources).forEach(([subj, list])=> list.forEach(r=> items.push({ type:'Resource', title:r.title, meta:r.type, subject:subj })));
+    Object.keys(subjectProgress).forEach(subj=>{
+      notes.filter(n=>n.subject===subj).forEach(n=> items.push({ type:'Note', title:n.title, meta:n.subject, subject:subj }));
+    });
+    backlog.forEach(b=> items.push({ type:'Backlog', title:b.title, meta:b.subject, subject:b.subject }));
+    schedule.forEach(s=> items.push({ type:'Schedule', title:s.title, meta:s.subject, subject:s.subject }));
+    journalEntries.forEach(j=> items.push({ type:'Journal', title:j.text.slice(0,60)+(j.text.length>60?'…':''), meta:j.date, subject:null }));
+    return items;
+  }
+  function renderSearchResults(query){
+    const box = document.getElementById('searchResults');
+    if(!query.trim()){ box.innerHTML = '<div class="search-empty">Type to search notes, resources, journal, backlog, and schedule.</div>'; return; }
+    const q = query.trim().toLowerCase();
+    const results = buildSearchIndex().filter(i => i.title.toLowerCase().includes(q));
+    if(results.length===0){ box.innerHTML = '<div class="search-empty">No matches found.</div>'; return; }
+    const grouped = {};
+    results.forEach(r=>{ (grouped[r.type] = grouped[r.type]||[]).push(r); });
+    box.innerHTML = Object.entries(grouped).map(([type, list])=>`
+      <div class="search-group-label">${type}</div>
+      ${list.map(r=>`<div class="search-result" data-subject="${r.subject||''}" data-type="${type}">
+        <span class="dot" style="background:${r.subject ? subjColor(r.subject) : 'var(--pencil)'}"></span>
+        <span class="search-result-title">${r.title}</span>
+        <span class="search-result-meta">${r.meta}</span>
+      </div>`).join('')}
+    `).join('');
+    document.querySelectorAll('.search-result').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const subj = el.dataset.subject; const type = el.dataset.type;
+        closeSearch();
+        if(type==='Journal'){ openJournal(); }
+        else if(subj){ openSubject(subj); }
+        else { closeSubject(); requestAnimationFrame(()=>{ const t = document.getElementById(type==='Backlog'?'backlogSection':'scheduleSection'); if(t) t.scrollIntoView({behavior:'smooth'}); }); }
+      });
+    });
+  }
+  function openSearch(){ document.getElementById('searchOverlay').classList.add('open'); document.getElementById('searchInput').value=''; renderSearchResults(''); document.getElementById('searchInput').focus(); }
+  function closeSearch(){ document.getElementById('searchOverlay').classList.remove('open'); }
+  document.getElementById('searchBtn').addEventListener('click', openSearch);
+  document.getElementById('searchOverlay').addEventListener('click', (e)=>{ if(e.target.id==='searchOverlay') closeSearch(); });
+  document.getElementById('searchInput').addEventListener('input', (e)=> renderSearchResults(e.target.value));
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape') closeSearch();
+    if((e.ctrlKey||e.metaKey) && e.key==='k'){ e.preventDefault(); openSearch(); }
+  });
+
+  /* ============ FOOTER NAVIGATION ============ */
+  document.getElementById('footSubjectNav').innerHTML = SUBJECTS.map(s=>
+    `<li><button data-subject-nav="${s.name}"><span class="dot" style="background:${s.color}"></span>${s.name}</button></li>`
+  ).join('');
+  document.querySelectorAll('[data-subject-nav]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openSubject(btn.dataset.subjectNav));
+  });
+  document.querySelectorAll('[data-scroll]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const targetId = btn.dataset.scroll;
+      const jump = ()=>{ const el = document.getElementById(targetId); if(el) el.scrollIntoView({ behavior:'smooth', block:'start' }); };
+      if(currentSubject){ closeSubject(); requestAnimationFrame(jump); } else { jump(); }
+    });
+  });
+
+  /* ============ INIT (called after login + data load) ============ */
+  function initialRenderAll(){
+    renderStats(); renderSubjectGrid(); renderSchedule(); renderBacklog(); renderNotes(); renderCalendar();
+    renderRevisionQueue(); renderMoodRow(); renderJournalList(); renderDistList(); renderSW(); renderSummary();
+    renderWeeklyPlanner(); renderMoodTrend();
+  }
+  window.initialRenderAll = initialRenderAll;
+</script>
+</body>
+</html>
