@@ -637,6 +637,7 @@
       <div class="summary-box">
         <p class="summary-text" id="summaryText"></p>
         <p class="summary-note" id="summaryNote">Generating…</p>
+        <button class="pill" id="regenSummaryBtn" style="margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; background:none; border:1px solid var(--line); padding:6px 11px; border-radius:20px; cursor:pointer; color:var(--pencil);">↻ Regenerate</button>
       </div>
 
       <div class="section-head" style="margin-top:26px;"><h2>Ask about your progress</h2><span>AI CHAT</span></div>
@@ -1342,6 +1343,13 @@ Syllabus time-elapsed: ${progressPct}%
   }
 
   async function generateSummary(period){
+    // If today's summary for this period already exists, reuse it instead of
+    // calling the API again and creating a duplicate saved entry.
+    const existing = pastSummaries.find(s => s.periodType===period && s.date===todayStrFn());
+    if(existing){
+      return { text: existing.content, note: "Today's " + period.toLowerCase() + " summary — already generated." };
+    }
+
     const dataSummary = buildDataSummary(period);
     let result;
     try{
@@ -1386,6 +1394,16 @@ Syllabus time-elapsed: ${progressPct}%
     document.getElementById('summaryText').textContent = text;
     document.getElementById('summaryNote').textContent = note || 'Generated via Anthropic API from your real logged data.';
   }
+  document.getElementById('regenSummaryBtn').addEventListener('click', async ()=>{
+    const existingIdx = pastSummaries.findIndex(s => s.periodType===activeSummaryTab && s.date===todayStrFn());
+    if(existingIdx > -1){
+      const existing = pastSummaries[existingIdx];
+      pastSummaries.splice(existingIdx, 1);
+      if(existing.id) deleteDoc(doc(db,'summaries',existing.id));
+      renderPastSummaries();
+    }
+    renderSummary();
+  });
 
   /* ============ WEEKLY PLANNER ============ */
   const DOW_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
