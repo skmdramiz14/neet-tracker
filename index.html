@@ -422,6 +422,7 @@
   .gcal-datenum.is-today-circle{ background:var(--rust); color:#fff; }
   .gcal-timecol{ position:relative; border-right:1px solid var(--line); }
   .gcal-hour-label{ height:32px; font-family:'JetBrains Mono',monospace; font-size:8.5px; color:var(--pencil); text-align:right; padding-right:5px; transform:translateY(-6px); }
+  .gcal-hour-label.gcal-hour-first{ transform:translateY(2px); }
   .gcal-daycol{ position:relative; border-right:1px solid var(--line); }
   .gcal-hourline{ height:32px; border-top:1px solid var(--line); box-sizing:border-box; }
   .gcal-now-line{ position:absolute; left:0; right:0; height:0; border-top:2px solid var(--rust); z-index:5; pointer-events:none; }
@@ -1950,7 +1951,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     // Time label column
     html += `<div class="gcal-timecol">`;
     for(let h=0; h<24; h++){
-      html += `<div class="gcal-hour-label">${h===0?'12 AM':h<12?h+' AM':h===12?'12 PM':(h-12)+' PM'}</div>`;
+      html += `<div class="gcal-hour-label ${h===0?'gcal-hour-first':''}">${h===0?'12 AM':h<12?h+' AM':h===12?'12 PM':(h-12)+' PM'}</div>`;
     }
     html += `</div>`;
 
