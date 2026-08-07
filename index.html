@@ -416,13 +416,17 @@
   .gcal-scroll{ max-height:640px; overflow-y:auto; }
   .gcal-grid{ display:grid; grid-template-columns:50px repeat(7,1fr); min-width:760px; position:relative; }
   .gcal-corner{ position:sticky; top:0; left:0; z-index:3; background:var(--card); border-bottom:1px solid var(--ink); border-right:1px solid var(--line); }
-  .gcal-daylabel{ position:sticky; top:0; z-index:2; background:var(--card); border-bottom:1px solid var(--ink); border-right:1px solid var(--line); text-align:center; padding:8px 4px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-soft); }
+  .gcal-daylabel{ position:sticky; top:0; z-index:2; background:var(--card); border-bottom:1px solid var(--ink); border-right:1px solid var(--line); text-align:center; padding:8px 4px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:4px; }
   .gcal-daylabel.is-today{ color:var(--rust); font-weight:600; }
+  .gcal-datenum{ font-family:'Fraunces',serif; font-size:15px; color:var(--ink); width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:50%; }
+  .gcal-datenum.is-today-circle{ background:var(--rust); color:#fff; }
   .gcal-timecol{ position:relative; border-right:1px solid var(--line); }
   .gcal-hour-label{ height:32px; font-family:'JetBrains Mono',monospace; font-size:8.5px; color:var(--pencil); text-align:right; padding-right:5px; transform:translateY(-6px); }
   .gcal-daycol{ position:relative; border-right:1px solid var(--line); }
   .gcal-hourline{ height:32px; border-top:1px solid var(--line); box-sizing:border-box; }
-  .gcal-block{ position:absolute; left:2px; right:2px; border-radius:3px; padding:2px 5px; font-size:9px; line-height:1.2; color:#fff; overflow:hidden; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); white-space:nowrap; text-overflow:ellipsis; display:flex; flex-direction:column; justify-content:center; }
+  .gcal-now-line{ position:absolute; left:0; right:0; height:0; border-top:2px solid var(--rust); z-index:5; pointer-events:none; }
+  .gcal-now-dot{ position:absolute; left:-4px; top:-5px; width:10px; height:10px; border-radius:50%; background:var(--rust); }
+  .gcal-block{ position:absolute; left:2px; right:2px; border-radius:7px; padding:3px 6px; font-size:9px; line-height:1.2; color:#fff; overflow:hidden; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); white-space:nowrap; text-overflow:ellipsis; display:flex; flex-direction:column; justify-content:center; }
   .gcal-block b{ display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gcal-block span.gcal-time{ display:block; font-size:8px; opacity:0.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gcal-block:hover{ filter:brightness(1.1); }
@@ -1888,13 +1892,12 @@ Recent journal entries: ${recentJournalText || 'none logged'}
   });
 
   function nextDateForDay(dayName){
-    // Finds this week's (Mon-Sun) date for the given day name, matching the Weekly Planner's week.
-    const dow = today.getDay();
-    const mondayOffset = dow===0 ? -6 : 1-dow;
-    const monday = new Date(today); monday.setDate(today.getDate()+mondayOffset);
-    const order = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    // Finds this week's (Sun-Sat) date for the given day name, matching the Daily Routine grid's week order.
+    const dow = today.getDay(); // 0=Sun
+    const sunday = new Date(today); sunday.setDate(today.getDate()-dow);
+    const order = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const idx = order.indexOf(dayName);
-    const d = new Date(monday); d.setDate(monday.getDate()+idx);
+    const d = new Date(sunday); d.setDate(sunday.getDate()+idx);
     return d.toISOString().slice(0,10);
   }
 
@@ -1918,7 +1921,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
 
   /* ============ DAILY ROUTINE (Google-Calendar-style week grid) ============ */
   const ROUTINE_CAT_COLORS = { 'Study':'var(--green)', 'Sleep':'var(--s-zoology)', 'Meal':'var(--gold)', 'Break':'var(--pencil)', 'Exercise':'var(--rust)', 'Personal':'var(--s-pchem)', 'Commute':'var(--s-physics)', 'Other':'var(--ink-soft)' };
-  const ROUTINE_DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const ROUTINE_DAY_ORDER = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const GCAL_HOUR_HEIGHT = 32; // px per hour row
   activeRoutineDay = DOW_NAMES[today.getDay()]; // which day new blocks get added to
 
@@ -1933,10 +1936,15 @@ Recent journal entries: ${recentJournalText || 'none logged'}
   function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
 
   function renderGCalGrid(){
-    const todayDayName = DOW_NAMES[today.getDay()];
+    const dow = today.getDay();
+    const sunday = new Date(today); sunday.setDate(today.getDate()-dow);
+    const todayDayName = DOW_NAMES[dow];
+
     let html = `<div class="gcal-corner"></div>`;
-    ROUTINE_DAY_ORDER.forEach(d=>{
-      html += `<div class="gcal-daylabel ${d===todayDayName?'is-today':''}">${d}</div>`;
+    ROUTINE_DAY_ORDER.forEach((d,i)=>{
+      const dNum = new Date(sunday); dNum.setDate(sunday.getDate()+i);
+      const isToday = d===todayDayName;
+      html += `<div class="gcal-daylabel ${isToday?'is-today':''}">${d}<span class="gcal-datenum ${isToday?'is-today-circle':''}">${dNum.getDate()}</span></div>`;
     });
 
     // Time label column
@@ -1946,10 +1954,18 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     }
     html += `</div>`;
 
+    // Current time, as minutes since midnight — used to draw the red "now" line on today's column.
+    const now = new Date();
+    const nowMinutes = now.getHours()*60 + now.getMinutes();
+    const nowTop = (nowMinutes/60) * GCAL_HOUR_HEIGHT;
+
     // Day columns with positioned blocks
     ROUTINE_DAY_ORDER.forEach(d=>{
       html += `<div class="gcal-daycol" style="height:${24*GCAL_HOUR_HEIGHT}px;">`;
       for(let h=0; h<24; h++) html += `<div class="gcal-hourline"></div>`;
+      if(d===todayDayName){
+        html += `<div class="gcal-now-line" style="top:${nowTop}px;"><span class="gcal-now-dot"></span></div>`;
+      }
       const dayBlocks = routineBlocks.filter(r=>r.day===d);
       dayBlocks.forEach(r=>{
         const top = (timeToMinutes(r.start)/60) * GCAL_HOUR_HEIGHT;
