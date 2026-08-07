@@ -494,13 +494,15 @@
           <div class="panel" id="scheduleSection"><div class="panel-head"><h2>Today's schedule</h2><span class="count mono" id="scheduleCount"></span></div>
             <div class="panel-body">
               <div class="note-form-row" style="margin-bottom:12px;">
-                <input type="text" id="schedTitle" placeholder="Add a task for today…">
+                <input type="text" id="schedTitle" placeholder="Add a task…">
                 <select id="schedSubject">
                   <option>Physics</option><option>Physical Chemistry</option><option>Inorganic Chemistry</option><option>Organic Chemistry</option><option>Botany</option><option>Zoology</option>
                 </select>
                 <select id="schedType"><option value="lecture">Lecture</option><option value="revision">Revision</option><option value="test">Test</option></select>
+                <input type="date" id="schedDate" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
                 <button class="note-add-btn" id="schedAddBtn">+ Add</button>
               </div>
+              <div class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;">Leave date blank for today, or pick a future date to plan ahead for the week.</div>
               <div id="scheduleList"></div>
             </div>
           </div>
@@ -967,7 +969,12 @@
       el.addEventListener('click', ()=>toggleTask(el.dataset.id));
       el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleTask(el.dataset.id); }});
     });
-    list.querySelectorAll('.del-btn[data-kind="sched"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('scheduleItems', b.dataset.id, schedule, renderSchedule, renderStats)));
+    list.querySelectorAll('.del-btn[data-kind="sched"]').forEach(b=> b.addEventListener('click', ()=>{
+      const aIdx = allScheduleItems.findIndex(x=>x.id===b.dataset.id);
+      if(aIdx>-1) allScheduleItems.splice(aIdx,1);
+      deleteItem('scheduleItems', b.dataset.id, schedule, renderSchedule, renderStats);
+      renderWeeklyPlanner(); renderCalendar();
+    }));
   }
   async function toggleTask(id){
     const item = schedule.find(s=>s.id===id); if(!item) return;
@@ -981,11 +988,15 @@
     if(!title) return;
     const subject = document.getElementById('schedSubject').value;
     const type = document.getElementById('schedType').value;
-    const data = { userId: currentUser.uid, date: todayStrFn(), time:'—', subject, type, title, done:false, createdAt: serverTimestamp() };
+    const pickedDate = document.getElementById('schedDate').value || todayStrFn();
+    const data = { userId: currentUser.uid, date: pickedDate, time:'—', subject, type, title, done:false, createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'scheduleItems'), data);
-    schedule.push({ id: ref.id, ...data });
+    const newItem = { id: ref.id, ...data };
+    allScheduleItems.push(newItem);
+    if(pickedDate === todayStrFn()) schedule.push(newItem);
     document.getElementById('schedTitle').value = '';
-    renderSchedule(); renderStats(); renderSubjectGrid();
+    document.getElementById('schedDate').value = '';
+    renderSchedule(); renderStats(); renderSubjectGrid(); renderWeeklyPlanner(); renderCalendar();
   });
 
   /* ============ BACKLOG (home) ============ */
