@@ -422,9 +422,10 @@
   .gcal-hour-label{ height:32px; font-family:'JetBrains Mono',monospace; font-size:8.5px; color:var(--pencil); text-align:right; padding-right:5px; transform:translateY(-6px); }
   .gcal-daycol{ position:relative; border-right:1px solid var(--line); }
   .gcal-hourline{ height:32px; border-top:1px solid var(--line); box-sizing:border-box; }
-  .gcal-block{ position:absolute; left:2px; right:2px; border-radius:3px; padding:2px 5px; font-size:9.5px; line-height:1.25; color:#fff; overflow:hidden; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+  .gcal-block{ position:absolute; left:2px; right:2px; border-radius:3px; padding:2px 5px; font-size:9px; line-height:1.2; color:#fff; overflow:hidden; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); white-space:nowrap; text-overflow:ellipsis; display:flex; flex-direction:column; justify-content:center; }
+  .gcal-block b{ display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gcal-block span.gcal-time{ display:block; font-size:8px; opacity:0.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gcal-block:hover{ filter:brightness(1.1); }
-  .gcal-block b{ display:block; font-weight:600; }
 
   @media (max-width:820px){ .journal-two-col, .sw-grid{ grid-template-columns:1fr; } .dist-form{ grid-template-columns:1fr 1fr; } }
   @media (max-width:600px){ .dist-form{ grid-template-columns:1fr; } }
@@ -1952,8 +1953,10 @@ Recent journal entries: ${recentJournalText || 'none logged'}
       const dayBlocks = routineBlocks.filter(r=>r.day===d);
       dayBlocks.forEach(r=>{
         const top = (timeToMinutes(r.start)/60) * GCAL_HOUR_HEIGHT;
-        const height = Math.max(16, ((timeToMinutes(r.end)-timeToMinutes(r.start))/60) * GCAL_HOUR_HEIGHT);
-        html += `<div class="gcal-block" data-id="${r.id}" style="top:${top}px; height:${height}px; background:${ROUTINE_CAT_COLORS[r.category]||'var(--pencil)'};" title="${r.activity} (${r.start}–${r.end}) — click to delete"><b>${r.activity}</b>${r.start}–${r.end}</div>`;
+        const durMin = timeToMinutes(r.end)-timeToMinutes(r.start);
+        const height = Math.max(22, (durMin/60) * GCAL_HOUR_HEIGHT);
+        const showTime = height >= 30;
+        html += `<div class="gcal-block" data-id="${r.id}" style="top:${top}px; height:${height}px; background:${ROUTINE_CAT_COLORS[r.category]||'var(--pencil)'};" title="${r.activity} (${r.start}–${r.end}) — click to delete"><b>${r.activity}</b>${showTime?`<span class="gcal-time">${r.start}–${r.end}</span>`:''}</div>`;
       });
       html += `</div>`;
     });
