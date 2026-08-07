@@ -1258,9 +1258,16 @@
   document.getElementById('footJournalBtn').addEventListener('click', openJournal);
 
   /* populate subject <select> elements used inside the journal view */
-  ['distSubject','strengthSubject','weaknessSubject'].forEach(id=>{
+  ['strengthSubject','weaknessSubject'].forEach(id=>{
     document.getElementById(id).innerHTML = SUBJECTS.map(s=>`<option>${s.name}</option>`).join('');
   });
+
+  /* Distraction categories: real subjects PLUS general non-subject causes,
+     since distraction isn't always tied to a specific subject. */
+  const GENERAL_DISTRACTION_CATEGORIES = ['Phone / Social Media', 'Procrastination', 'Overthinking / Anxiety', 'Family / Social', 'Sleep / Fatigue', 'Other'];
+  document.getElementById('distSubject').innerHTML =
+    `<optgroup label="Subject">${SUBJECTS.map(s=>`<option>${s.name}</option>`).join('')}</optgroup>` +
+    `<optgroup label="General">${GENERAL_DISTRACTION_CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</optgroup>`;
 
   /* ---- Mood picker ---- */
   const MOODS = [ {v:1,e:'😩'}, {v:2,e:'😕'}, {v:3,e:'😐'}, {v:4,e:'🙂'}, {v:5,e:'😄'} ];
