@@ -520,7 +520,8 @@
       <div class="section-head" id="weeklySection"><h2>Weekly planner</h2><span id="weekRangeLabel"></span></div>
       <div class="week-grid" id="weekGrid"></div>
 
-      <div class="section-head" id="routineSection"><h2>Daily routine</h2><span>WEEK VIEW · CLICK A BLOCK TO DELETE</span></div>
+      <div class="section-head" id="routineSection"><h2>Daily routine</h2><span><button id="connectGCalBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">📅 Connect Google Calendar</button></span></div>
+      <div id="gcalStatus" class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;"></div>
       <div class="gcal-wrap"><div class="gcal-scroll"><div class="gcal-grid" id="gcalGrid"></div></div></div>
 
       <div class="section-head"><h2>Add a time block</h2><span>SELECT A DAY, THEN ADD</span></div>
@@ -805,7 +806,7 @@
   /* ============ FIREBASE SETUP ============ */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import {
     getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp
@@ -828,6 +829,7 @@
   const db = getFirestore(fbApp);
   const storage = getStorage(fbApp);
   let currentUser = null;
+  let googleAccessToken = null;
 
   /* ============ LOGIN GATE ============ */
   const loginGate = document.getElementById('loginGate');
@@ -1868,6 +1870,51 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     }
   });
 
+  /* ============ GOOGLE CALENDAR SYNC ============ */
+  document.getElementById('connectGCalBtn').addEventListener('click', async ()=>{
+    const statusEl = document.getElementById('gcalStatus');
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/calendar.events');
+    try{
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      googleAccessToken = credential.accessToken;
+      statusEl.textContent = '✓ Connected — new routine blocks will sync to your Google Calendar.';
+      document.getElementById('connectGCalBtn').textContent = '📅 Google Calendar connected';
+    }catch(err){
+      statusEl.textContent = "Couldn't connect Google Calendar — try again.";
+    }
+  });
+
+  function nextDateForDay(dayName){
+    // Finds this week's (Mon-Sun) date for the given day name, matching the Weekly Planner's week.
+    const dow = today.getDay();
+    const mondayOffset = dow===0 ? -6 : 1-dow;
+    const monday = new Date(today); monday.setDate(today.getDate()+mondayOffset);
+    const order = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const idx = order.indexOf(dayName);
+    const d = new Date(monday); d.setDate(monday.getDate()+idx);
+    return d.toISOString().slice(0,10);
+  }
+
+  async function pushToGoogleCalendar(day, start, end, activity){
+    if(!googleAccessToken) return; // not connected — silently skip, Firestore save already succeeded
+    const dateStr = nextDateForDay(day);
+    try{
+      await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: activity,
+          start: { dateTime: `${dateStr}T${start}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          end: { dateTime: `${dateStr}T${end}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        }),
+      });
+    }catch(e){
+      // Token may have expired — silently fail; user can hit "Connect Google Calendar" again to refresh.
+    }
+  }
+
   /* ============ DAILY ROUTINE (Google-Calendar-style week grid) ============ */
   const ROUTINE_CAT_COLORS = { 'Study':'var(--green)', 'Sleep':'var(--s-zoology)', 'Meal':'var(--gold)', 'Break':'var(--pencil)', 'Exercise':'var(--rust)', 'Personal':'var(--s-pchem)', 'Commute':'var(--s-physics)', 'Other':'var(--ink-soft)' };
   const ROUTINE_DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -1939,6 +1986,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     routineBlocks.push({ id: ref.id, ...data });
     document.getElementById('routineActivity').value = '';
     renderGCalGrid();
+    pushToGoogleCalendar(activeRoutineDay, start, end, activity);
   });
 
   /* ============ INIT (called after login + data load) ============ */
