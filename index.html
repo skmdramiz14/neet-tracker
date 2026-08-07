@@ -324,6 +324,7 @@
 
   /* ---------- JOURNAL VIEW ---------- */
   #journalView{ display:none; }
+  #routineView{ display:none; }
   .journal-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:8px; }
   .mood-row{ display:flex; gap:10px; margin:6px 0 16px; }
   .mood-btn{ width:44px; height:44px; border-radius:50%; border:1.5px solid var(--line); background:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s ease; }
@@ -481,6 +482,7 @@
       <div class="topbar-date" id="todayDate">—</div>
       <button class="bell-btn" id="searchBtn" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
       <button class="journal-nav-btn" id="journalNavBtn">Journal</button>
+      <button class="journal-nav-btn" id="routineNavBtn" style="background:var(--s-physics);">Routine</button>
       <button class="bell-btn" id="bellBtn" aria-label="Notifications">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
         <span class="bell-dot" id="bellDot"></span>
@@ -525,22 +527,6 @@
 
       <div class="section-head" id="weeklySection"><h2>Weekly planner</h2><span id="weekRangeLabel"></span></div>
       <div class="week-grid" id="weekGrid"></div>
-
-      <div class="section-head" id="routineSection"><h2>Daily routine</h2><span><button id="connectGCalBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">📅 Connect Google Calendar</button></span></div>
-      <div id="gcalStatus" class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;"></div>
-      <div class="gcal-wrap"><div class="gcal-scroll"><div class="gcal-grid" id="gcalGrid"></div></div></div>
-
-      <div class="section-head"><h2>Add a time block</h2><span>SELECT A DAY, THEN ADD</span></div>
-      <div class="routine-daytabs" id="routineDayTabs"></div>
-      <div class="card">
-        <div class="routine-form-row">
-          <input type="time" id="routineStart">
-          <input type="time" id="routineEnd">
-          <input type="text" id="routineActivity" placeholder="Activity (e.g. Physics — Rotational Motion)">
-          <select id="routineCategory"><option>Study</option><option>Sleep</option><option>Meal</option><option>Break</option><option>Exercise</option><option>Personal</option><option>Commute</option><option>Other</option></select>
-          <button class="note-add-btn" id="routineAddBtn">+ Add</button>
-        </div>
-      </div>
     </div>
 
     <div class="wrap">
@@ -756,6 +742,29 @@
     <div style="height:60px"></div>
   </div>
 
+  <!-- ================= ROUTINE VIEW ================= -->
+  <div id="routineView">
+    <div class="wrap">
+      <button class="back-btn" id="routineBackBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Back to dashboard</button>
+      <div class="section-head"><h2>Daily routine</h2><span><button id="connectGCalBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">📅 Connect Google Calendar</button></span></div>
+      <div id="gcalStatus" class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;"></div>
+      <div class="gcal-wrap"><div class="gcal-scroll"><div class="gcal-grid" id="gcalGrid"></div></div></div>
+
+      <div class="section-head"><h2>Add a time block</h2><span>SELECT A DAY, THEN ADD</span></div>
+      <div class="routine-daytabs" id="routineDayTabs"></div>
+      <div class="card">
+        <div class="routine-form-row">
+          <input type="time" id="routineStart">
+          <input type="time" id="routineEnd">
+          <input type="text" id="routineActivity" placeholder="Activity (e.g. Physics — Rotational Motion)">
+          <select id="routineCategory"><option>Study</option><option>Sleep</option><option>Meal</option><option>Break</option><option>Exercise</option><option>Personal</option><option>Commute</option><option>Other</option></select>
+          <button class="note-add-btn" id="routineAddBtn">+ Add</button>
+        </div>
+      </div>
+    </div>
+    <div style="height:60px"></div>
+  </div>
+
   <footer>
     <div class="foot-nav">
       <div>
@@ -772,7 +781,7 @@
           <li><button data-scroll="dashboardSection">Dashboard</button></li>
           <li><button data-scroll="ledgerSection">Subject ledger</button></li>
           <li><button data-scroll="weeklySection">Weekly planner</button></li>
-          <li><button data-scroll="routineSection">Daily routine</button></li>
+          <li><button id="footRoutineBtn">Daily routine</button></li>
           <li><button data-scroll="scheduleSection">Today's schedule</button></li>
           <li><button data-scroll="backlogSection">Backlog</button></li>
           <li><button data-scroll="calendarSection">Calendar</button></li>
@@ -1197,6 +1206,8 @@
     currentSubject = name;
     activeResTab = 'All';
     document.getElementById('homeView').style.display = 'none';
+    document.getElementById('journalView').style.display = 'none';
+    document.getElementById('routineView').style.display = 'none';
     document.getElementById('subjectView').style.display = 'block';
     window.scrollTo(0,0);
     renderSubjectDetail(name);
@@ -1363,6 +1374,7 @@
   function openJournal(){
     document.getElementById('homeView').style.display = 'none';
     document.getElementById('subjectView').style.display = 'none';
+    document.getElementById('routineView').style.display = 'none';
     document.getElementById('journalView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
@@ -1375,6 +1387,24 @@
   document.getElementById('journalNavBtn').addEventListener('click', openJournal);
   document.getElementById('journalBackBtn').addEventListener('click', closeJournal);
   document.getElementById('footJournalBtn').addEventListener('click', openJournal);
+
+  function openRoutine(){
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('subjectView').style.display = 'none';
+    document.getElementById('journalView').style.display = 'none';
+    document.getElementById('routineView').style.display = 'block';
+    currentSubject = null;
+    window.scrollTo(0,0);
+    renderRoutine();
+  }
+  function closeRoutine(){
+    document.getElementById('routineView').style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+    window.scrollTo(0,0);
+  }
+  document.getElementById('routineNavBtn').addEventListener('click', openRoutine);
+  document.getElementById('routineBackBtn').addEventListener('click', closeRoutine);
+  document.getElementById('footRoutineBtn').addEventListener('click', openRoutine);
 
   /* populate subject <select> elements used inside the journal view */
   ['strengthSubject','weaknessSubject'].forEach(id=>{
