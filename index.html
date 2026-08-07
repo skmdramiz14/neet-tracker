@@ -506,7 +506,19 @@
               <div id="scheduleList"></div>
             </div>
           </div>
-          <div class="panel" id="revisionSection"><div class="panel-head"><h2>Revision queue</h2><span class="count mono" id="revisionCount"></span></div><div class="panel-body" id="revisionList"></div></div>
+          <div class="panel" id="revisionSection">
+            <div class="panel-head"><h2>Revision queue</h2><span class="count mono" id="revisionCount"></span></div>
+            <div class="panel-body">
+              <div class="note-form-row" style="margin-bottom:12px;">
+                <input type="text" id="revTopicInput" placeholder="Topic to start revising (e.g. Mole concept)">
+                <select id="revSubjectInput">
+                  <option>Physics</option><option>Physical Chemistry</option><option>Inorganic Chemistry</option><option>Organic Chemistry</option><option>Botany</option><option>Zoology</option>
+                </select>
+                <button class="note-add-btn" id="revAddBtn">+ Add to queue</button>
+              </div>
+              <div id="revisionList"></div>
+            </div>
+          </div>
           <div class="panel" id="backlogSection"><div class="panel-head"><h2>Backlog</h2><span class="count mono" id="backlogCount"></span></div><div class="panel-body" id="backlogList"></div></div>
         </div>
         <div>
@@ -1223,6 +1235,17 @@
   });
 
   /* ============ REVISION QUEUE (homepage, cross-subject) ============ */
+  document.getElementById('revAddBtn').addEventListener('click', async ()=>{
+    const topic = document.getElementById('revTopicInput').value.trim();
+    if(!topic || !currentUser) return;
+    const subject = document.getElementById('revSubjectInput').value;
+    const data = { userId: currentUser.uid, subject, topic, scheduledDate: todayStrFn(), reviewCount:0, completedDate:null, createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'revisions'), data);
+    revisionQueue.push({ id: ref.id, subject, topic, reviewCount:0, due:'today', daysOverdue:0 });
+    document.getElementById('revTopicInput').value = '';
+    renderRevisionQueue();
+  });
+
   function renderRevisionQueue(){
     const list = document.getElementById('revisionList');
     document.getElementById('revisionCount').textContent = revisionQueue.length + ' DUE';
