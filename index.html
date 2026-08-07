@@ -1024,7 +1024,7 @@
     const body = document.getElementById('noteBody').value.trim();
     const subject = document.getElementById('noteSubject').value;
     if(!title || !body) return;
-    const data = { userId: currentUser.uid, title, subject, body, date:'Today', createdAt: serverTimestamp() };
+    const data = { userId: currentUser.uid, title, subject, body, date: todayStrFn(), createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'notes'), data);
     notes.unshift({ id: ref.id, ...data });
     document.getElementById('noteTitle').value=''; document.getElementById('noteBody').value='';
@@ -1338,7 +1338,7 @@
       mediaUrls.push(path);
     }
 
-    const data = { userId: currentUser.uid, date:'Today', mood:selectedMood, text, mediaCount:pendingMedia.length, mediaUrls, createdAt: serverTimestamp() };
+    const data = { userId: currentUser.uid, date: todayStrFn(), mood:selectedMood, text, mediaCount:pendingMedia.length, mediaUrls, createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'journalEntries'), data);
     journalEntries.unshift({ id: ref.id, ...data });
 
@@ -1522,20 +1522,25 @@ Recent journal entries: ${recentJournalText || 'none logged'}
   }
 
   /* ============ MOOD TREND ============ */
-  const moodHistory = [
-    {label:'22', mood:3},{label:'23', mood:4},{label:'24', mood:2},{label:'25', mood:3},
-    {label:'26', mood:4},{label:'27', mood:4},{label:'28', mood:3},{label:'29', mood:2},
-    {label:'30', mood:3},{label:'31', mood:4},{label:'01', mood:2},{label:'02', mood:4},
-    {label:'03', mood:3},{label:'04', mood:4},
-  ];
   function moodColor(v){ return v<=2 ? 'var(--rust)' : v===3 ? 'var(--gold)' : 'var(--ok)'; }
   function renderMoodTrend(){
-    document.getElementById('moodTrendBars').innerHTML = moodHistory.map(m=>`
+    const withMood = journalEntries
+      .filter(j => j.mood != null)
+      .slice(0, 14)
+      .reverse()
+      .map(j => ({ label: (j.date && j.date.match(/-(\d{2})$/)) ? j.date.match(/-(\d{2})$/)[1] : j.date, mood: j.mood }));
+
+    if(withMood.length === 0){
+      document.getElementById('moodTrendBars').innerHTML = '<div class="empty-note" style="width:100%;">Log a few journal entries to see your mood trend.</div>';
+      document.getElementById('moodTrendLegend').innerHTML = '';
+      return;
+    }
+    document.getElementById('moodTrendBars').innerHTML = withMood.map(m=>`
       <div class="mood-bar-col">
         <div class="mood-bar" style="height:${m.mood*18}%; background:${moodColor(m.mood)}"></div>
         <div class="mood-bar-label">${m.label}</div>
       </div>`).join('');
-    document.getElementById('moodTrendLegend').innerHTML = `<span>Low</span><span>Aug 04 →</span><span>High</span>`;
+    document.getElementById('moodTrendLegend').innerHTML = `<span>Low</span><span>Last ${withMood.length} entries</span><span>High</span>`;
   }
 
   /* ============ GLOBAL SEARCH ============ */
