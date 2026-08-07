@@ -411,6 +411,21 @@
   .routine-form-row{ display:grid; grid-template-columns:100px 100px 1fr 130px auto; gap:8px; margin-bottom:14px; align-items:center; }
   @media (max-width:700px){ .routine-form-row{ grid-template-columns:1fr 1fr; } }
 
+  /* ---------- GOOGLE-CALENDAR-STYLE WEEK GRID ---------- */
+  .gcal-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:5px; background:var(--card); margin-bottom:20px; }
+  .gcal-scroll{ max-height:640px; overflow-y:auto; }
+  .gcal-grid{ display:grid; grid-template-columns:50px repeat(7,1fr); min-width:760px; position:relative; }
+  .gcal-corner{ position:sticky; top:0; left:0; z-index:3; background:var(--card); border-bottom:1px solid var(--ink); border-right:1px solid var(--line); }
+  .gcal-daylabel{ position:sticky; top:0; z-index:2; background:var(--card); border-bottom:1px solid var(--ink); border-right:1px solid var(--line); text-align:center; padding:8px 4px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-soft); }
+  .gcal-daylabel.is-today{ color:var(--rust); font-weight:600; }
+  .gcal-timecol{ position:relative; border-right:1px solid var(--line); }
+  .gcal-hour-label{ height:32px; font-family:'JetBrains Mono',monospace; font-size:8.5px; color:var(--pencil); text-align:right; padding-right:5px; transform:translateY(-6px); }
+  .gcal-daycol{ position:relative; border-right:1px solid var(--line); }
+  .gcal-hourline{ height:32px; border-top:1px solid var(--line); box-sizing:border-box; }
+  .gcal-block{ position:absolute; left:2px; right:2px; border-radius:3px; padding:2px 5px; font-size:9.5px; line-height:1.25; color:#fff; overflow:hidden; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+  .gcal-block:hover{ filter:brightness(1.1); }
+  .gcal-block b{ display:block; font-weight:600; }
+
   @media (max-width:820px){ .journal-two-col, .sw-grid{ grid-template-columns:1fr; } .dist-form{ grid-template-columns:1fr 1fr; } }
   @media (max-width:600px){ .dist-form{ grid-template-columns:1fr; } }
   @media (max-width:980px){ .subject-grid{ grid-template-columns:repeat(2,1fr); } .res-grid{ grid-template-columns:repeat(2,1fr); } }
@@ -505,7 +520,10 @@
       <div class="section-head" id="weeklySection"><h2>Weekly planner</h2><span id="weekRangeLabel"></span></div>
       <div class="week-grid" id="weekGrid"></div>
 
-      <div class="section-head" id="routineSection"><h2>Daily routine</h2><span>FULL-DAY TIME BLOCKS</span></div>
+      <div class="section-head" id="routineSection"><h2>Daily routine</h2><span>WEEK VIEW · CLICK A BLOCK TO DELETE</span></div>
+      <div class="gcal-wrap"><div class="gcal-scroll"><div class="gcal-grid" id="gcalGrid"></div></div></div>
+
+      <div class="section-head"><h2>Add a time block</h2><span>SELECT A DAY, THEN ADD</span></div>
       <div class="routine-daytabs" id="routineDayTabs"></div>
       <div class="card">
         <div class="routine-form-row">
@@ -516,7 +534,6 @@
           <button class="note-add-btn" id="routineAddBtn">+ Add</button>
         </div>
       </div>
-      <div id="routineList"></div>
     </div>
 
     <div class="wrap">
@@ -1851,33 +1868,64 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     }
   });
 
-  /* ============ DAILY ROUTINE (full-day time-blocked, per day of week) ============ */
+  /* ============ DAILY ROUTINE (Google-Calendar-style week grid) ============ */
   const ROUTINE_CAT_COLORS = { 'Study':'var(--green)', 'Sleep':'var(--s-zoology)', 'Meal':'var(--gold)', 'Break':'var(--pencil)', 'Exercise':'var(--rust)', 'Personal':'var(--s-pchem)', 'Commute':'var(--s-physics)', 'Other':'var(--ink-soft)' };
-  activeRoutineDay = DOW_NAMES[today.getDay()]; // defaults to today's day name (e.g. 'Mon')
+  const ROUTINE_DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const GCAL_HOUR_HEIGHT = 32; // px per hour row
+  activeRoutineDay = DOW_NAMES[today.getDay()]; // which day new blocks get added to
 
   function renderRoutineDayTabs(){
-    const order = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    document.getElementById('routineDayTabs').innerHTML = order.map(d=>{
+    document.getElementById('routineDayTabs').innerHTML = ROUTINE_DAY_ORDER.map(d=>{
       const isActive = d===activeRoutineDay;
       return `<button class="pill" data-day="${d}" style="${isActive?'background:var(--ink);color:#fff;border-color:var(--ink);':''}">${d}</button>`;
     }).join('');
-    document.querySelectorAll('#routineDayTabs .pill').forEach(b=> b.addEventListener('click', ()=>{ activeRoutineDay=b.dataset.day; renderRoutine(); }));
+    document.querySelectorAll('#routineDayTabs .pill').forEach(b=> b.addEventListener('click', ()=>{ activeRoutineDay=b.dataset.day; renderRoutineDayTabs(); }));
+  }
+
+  function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+
+  function renderGCalGrid(){
+    const todayDayName = DOW_NAMES[today.getDay()];
+    let html = `<div class="gcal-corner"></div>`;
+    ROUTINE_DAY_ORDER.forEach(d=>{
+      html += `<div class="gcal-daylabel ${d===todayDayName?'is-today':''}">${d}</div>`;
+    });
+
+    // Time label column
+    html += `<div class="gcal-timecol">`;
+    for(let h=0; h<24; h++){
+      html += `<div class="gcal-hour-label">${h===0?'12 AM':h<12?h+' AM':h===12?'12 PM':(h-12)+' PM'}</div>`;
+    }
+    html += `</div>`;
+
+    // Day columns with positioned blocks
+    ROUTINE_DAY_ORDER.forEach(d=>{
+      html += `<div class="gcal-daycol" style="height:${24*GCAL_HOUR_HEIGHT}px;">`;
+      for(let h=0; h<24; h++) html += `<div class="gcal-hourline"></div>`;
+      const dayBlocks = routineBlocks.filter(r=>r.day===d);
+      dayBlocks.forEach(r=>{
+        const top = (timeToMinutes(r.start)/60) * GCAL_HOUR_HEIGHT;
+        const height = Math.max(16, ((timeToMinutes(r.end)-timeToMinutes(r.start))/60) * GCAL_HOUR_HEIGHT);
+        html += `<div class="gcal-block" data-id="${r.id}" style="top:${top}px; height:${height}px; background:${ROUTINE_CAT_COLORS[r.category]||'var(--pencil)'};" title="${r.activity} (${r.start}–${r.end}) — click to delete"><b>${r.activity}</b>${r.start}–${r.end}</div>`;
+      });
+      html += `</div>`;
+    });
+
+    document.getElementById('gcalGrid').innerHTML = html;
+    document.querySelectorAll('.gcal-block').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        if(confirm('Delete this time block?')) deleteItem('routineBlocks', el.dataset.id, routineBlocks, renderGCalGrid);
+      });
+    });
+
+    // Auto-scroll to ~6 AM on first render so the useful part of the day is visible immediately.
+    const scrollBox = document.querySelector('.gcal-scroll');
+    if(scrollBox) scrollBox.scrollTop = 5 * GCAL_HOUR_HEIGHT;
   }
 
   function renderRoutine(){
     renderRoutineDayTabs();
-    const dayBlocks = routineBlocks.filter(r=>r.day===activeRoutineDay).sort((a,b)=> a.start.localeCompare(b.start));
-    document.getElementById('routineList').innerHTML = dayBlocks.length ? dayBlocks.map(r=>`
-      <div class="routine-block">
-        <div class="routine-time">${r.start}–${r.end}</div>
-        <div class="routine-cat-dot" style="background:${ROUTINE_CAT_COLORS[r.category]||'var(--pencil)'}"></div>
-        <div style="flex:1;">
-          <div class="routine-activity">${r.activity}</div>
-          <div class="routine-cat-label">${r.category}</div>
-        </div>
-        <button class="del-btn" data-id="${r.id}" aria-label="Delete">✕</button>
-      </div>`).join('') : `<div class="empty-note">No routine set for ${activeRoutineDay} yet — add your first time block.</div>`;
-    document.querySelectorAll('#routineList .del-btn').forEach(b=> b.addEventListener('click', ()=>deleteItem('routineBlocks', b.dataset.id, routineBlocks, renderRoutine)));
+    renderGCalGrid();
   }
 
   document.getElementById('routineAddBtn').addEventListener('click', async ()=>{
@@ -1890,7 +1938,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     const ref = await addDoc(collection(db,'routineBlocks'), data);
     routineBlocks.push({ id: ref.id, ...data });
     document.getElementById('routineActivity').value = '';
-    renderRoutine();
+    renderGCalGrid();
   });
 
   /* ============ INIT (called after login + data load) ============ */
