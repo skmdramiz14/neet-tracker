@@ -393,6 +393,13 @@
   .del-btn{ background:none; border:none; color:var(--pencil); cursor:pointer; padding:2px 4px; font-size:14px; line-height:1; flex-shrink:0; border-radius:3px; }
   .del-btn:hover{ color:var(--rust); background:rgba(176,67,31,0.08); }
 
+  /* ---------- QUICK RECALL ---------- */
+  .qr-card{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:12px 14px; margin-bottom:10px; }
+  .qr-card-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+  .qr-cat-badge{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.05em; text-transform:uppercase; padding:3px 8px; border-radius:10px; color:#fff; }
+  .qr-content{ font-size:14px; line-height:1.5; }
+  .qr-subject{ font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--pencil); text-transform:uppercase; margin-top:5px; }
+
   @media (max-width:820px){ .journal-two-col, .sw-grid{ grid-template-columns:1fr; } .dist-form{ grid-template-columns:1fr 1fr; } }
   @media (max-width:600px){ .dist-form{ grid-template-columns:1fr; } }
   @media (max-width:980px){ .subject-grid{ grid-template-columns:repeat(2,1fr); } .res-grid{ grid-template-columns:repeat(2,1fr); } }
@@ -541,6 +548,22 @@
                 <button class="note-add-btn" id="noteAddBtn">+ Add note</button>
               </div>
               <div id="notesList"></div>
+            </div>
+          </div>
+
+          <div class="panel" id="quickRecallSection">
+            <div class="panel-head"><h2>Quick recall</h2><span class="count mono" id="qrCount"></span></div>
+            <div class="panel-body">
+              <div class="note-form">
+                <textarea id="qrContent" placeholder="A formula, date, name, or concept you keep forgetting…" style="min-height:44px;"></textarea>
+                <div class="note-form-row">
+                  <select id="qrCategory"><option>Formula</option><option>Concept</option><option>Date</option><option>Name</option><option>Fact</option><option>Other</option></select>
+                  <select id="qrSubject"><option value="">No subject</option></select>
+                </div>
+                <button class="note-add-btn" id="qrAddBtn">+ Add to recall list</button>
+              </div>
+              <div class="row-flex" id="qrTabs" style="margin:12px 0 4px; flex-wrap:wrap; gap:6px;"></div>
+              <div id="qrList"></div>
             </div>
           </div>
         </div>
@@ -845,6 +868,8 @@
   let allScheduleItems = [];
   let pastSummaries = [];
   let chatHistory = [];
+  let quickRecall = [];
+  let activeQrTab = 'All';
 
   const todayStrFn = () => new Date().toISOString().slice(0,10);
   const daysBetween = (a,b) => Math.round((new Date(a) - new Date(b)) / 86400000);
@@ -862,7 +887,7 @@
     const uid = currentUser.uid;
     const todayIso = todayStrFn();
 
-    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap] = await Promise.all([
+    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap, qrSnap] = await Promise.all([
       getDocs(query(collection(db,'scheduleItems'), where('userId','==',uid))),
       getDocs(query(collection(db,'notes'), where('userId','==',uid))),
       getDocs(query(collection(db,'tests'), where('userId','==',uid))),
@@ -874,6 +899,7 @@
       getDocs(query(collection(db,'subjectProgress'), where('userId','==',uid))),
       getDocs(query(collection(db,'summaries'), where('userId','==',uid))),
       getDocs(query(collection(db,'chatMessages'), where('userId','==',uid))),
+      getDocs(query(collection(db,'quickRecall'), where('userId','==',uid))),
     ]);
 
     const allScheduleDocs = schedSnap.docs.map(d=>({ id:d.id, ...d.data() }));
@@ -904,6 +930,7 @@
 
     pastSummaries = sumSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.date < b.date ? 1 : -1));
     chatHistory = chatSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.ts||0) - (b.ts||0));
+    quickRecall = qrSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (b.ts||0) - (a.ts||0));
 
     progSnap.docs.forEach(d=>{ const p=d.data(); if(subjectProgress[p.subject]) subjectProgress[p.subject].pct = p.pct||0; });
     SUBJECTS.forEach(s=>{
@@ -1592,6 +1619,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     backlog.forEach(b=> items.push({ type:'Backlog', title:b.title, meta:b.subject, subject:b.subject }));
     schedule.forEach(s=> items.push({ type:'Schedule', title:s.title, meta:s.subject, subject:s.subject }));
     journalEntries.forEach(j=> items.push({ type:'Journal', title:j.text.slice(0,60)+(j.text.length>60?'…':''), meta:j.date, subject:null }));
+    quickRecall.forEach(q=> items.push({ type:'Quick Recall', title:q.content.slice(0,60)+(q.content.length>60?'…':''), meta:q.category, subject:q.subject||null }));
     return items;
   }
   function renderSearchResults(query){
@@ -1706,7 +1734,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     const exportData = {
       exportedAt: new Date().toISOString(),
       allScheduleItems, notes, tests, resources, revisionQueue, journalEntries,
-      distractions, strengths, weaknesses, pastSummaries, subjectProgress, chatHistory,
+      distractions, strengths, weaknesses, pastSummaries, subjectProgress, chatHistory, quickRecall,
     };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1719,11 +1747,50 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     URL.revokeObjectURL(url);
   });
 
+  /* ============ QUICK RECALL ============ */
+  const QR_CATEGORIES = ['Formula','Concept','Date','Name','Fact','Other'];
+  const QR_COLORS = { 'Formula':'var(--s-physics)', 'Concept':'var(--s-pchem)', 'Date':'var(--gold)', 'Name':'var(--s-zoology)', 'Fact':'var(--green)', 'Other':'var(--pencil)' };
+
+  document.getElementById('qrSubject').innerHTML += SUBJECTS.map(s=>`<option>${s.name}</option>`).join('');
+
+  function renderQuickRecall(){
+    document.getElementById('qrCount').textContent = quickRecall.length + ' SAVED';
+    document.getElementById('qrTabs').innerHTML = ['All', ...QR_CATEGORIES].map(c=>{
+      const n = c==='All' ? quickRecall.length : quickRecall.filter(q=>q.category===c).length;
+      return `<button class="pill" data-cat="${c}" style="${activeQrTab===c?'background:var(--ink);color:#fff;border-color:var(--ink);':''}">${c} (${n})</button>`;
+    }).join('');
+    document.querySelectorAll('#qrTabs .pill').forEach(b=> b.addEventListener('click', ()=>{ activeQrTab=b.dataset.cat; renderQuickRecall(); }));
+
+    const shown = activeQrTab==='All' ? quickRecall : quickRecall.filter(q=>q.category===activeQrTab);
+    document.getElementById('qrList').innerHTML = shown.length ? shown.map(q=>`
+      <div class="qr-card">
+        <div class="qr-card-head">
+          <span class="qr-cat-badge" style="background:${QR_COLORS[q.category]||'var(--pencil)'}">${q.category}</span>
+          <button class="del-btn" data-id="${q.id}" aria-label="Delete">✕</button>
+        </div>
+        <div class="qr-content">${q.content}</div>
+        ${q.subject ? `<div class="qr-subject">${q.subject}</div>` : ''}
+      </div>`).join('') : '<div class="empty-note">Nothing saved in this category yet.</div>';
+    document.querySelectorAll('#qrList .del-btn').forEach(b=> b.addEventListener('click', ()=>deleteItem('quickRecall', b.dataset.id, quickRecall, renderQuickRecall)));
+  }
+
+  document.getElementById('qrAddBtn').addEventListener('click', async ()=>{
+    const content = document.getElementById('qrContent').value.trim();
+    if(!content || !currentUser) return;
+    const category = document.getElementById('qrCategory').value;
+    const subject = document.getElementById('qrSubject').value;
+    const data = { userId: currentUser.uid, content, category, subject, ts: Date.now(), createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'quickRecall'), data);
+    quickRecall.unshift({ id: ref.id, ...data });
+    document.getElementById('qrContent').value = '';
+    renderQuickRecall();
+  });
+
   /* ============ INIT (called after login + data load) ============ */
   function initialRenderAll(){
     renderStats(); renderSubjectGrid(); renderSchedule(); renderBacklog(); renderNotes(); renderCalendar();
     renderRevisionQueue(); renderMoodRow(); renderJournalList(); renderDistList(); renderSW(); renderSummary();
-    renderWeeklyPlanner(); renderMoodTrend(); renderPastSummaries(); renderChat();
+    renderWeeklyPlanner(); renderMoodTrend(); renderPastSummaries(); renderChat(); renderQuickRecall();
   }
   window.initialRenderAll = initialRenderAll;
 </script>
