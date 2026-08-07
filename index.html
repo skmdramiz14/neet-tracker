@@ -1403,6 +1403,8 @@
     tests.forEach(t=>{ (bySubjTests[t.subject]=bySubjTests[t.subject]||[]).push(t); });
     const avgs = Object.entries(bySubjTests).map(([s,list])=>`${s}: ${Math.round(list.reduce((a,t)=>a+(t.score/t.max*100),0)/list.length)}%`);
     const progressPct = Math.round((elapsed/totalDays)*100);
+    const recentMoods = journalEntries.slice(0,7).map(j=>j.mood).filter(m=>m!=null);
+    const recentJournalText = journalEntries.slice(0,3).map(j=>`[${j.date}, mood ${j.mood}/5] ${j.text}`).join(' | ');
     return `
 Period: ${period}
 Lectures today: ${lecDone}/${lecTotal} done
@@ -1414,6 +1416,8 @@ Average scores by subject: ${avgs.join(', ') || 'none logged'}
 Strengths noted: ${strengths.map(s=>s.topic).join(', ') || 'none'}
 Weaknesses noted: ${weaknesses.map(w=>w.topic).join(', ') || 'none'}
 Syllabus time-elapsed: ${progressPct}%
+Recent mood scores (1-5, most recent first): ${recentMoods.join(', ') || 'none logged'}
+Recent journal entries: ${recentJournalText || 'none logged'}
 `.trim();
   }
 
