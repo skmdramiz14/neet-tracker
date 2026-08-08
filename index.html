@@ -746,10 +746,6 @@
   <div id="routineView">
     <div class="wrap">
       <button class="back-btn" id="routineBackBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Back to dashboard</button>
-      <div class="section-head"><h2>Daily routine</h2><span><button id="connectGCalBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">📅 Connect Google Calendar</button></span></div>
-      <div id="gcalStatus" class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;"></div>
-      <div class="gcal-wrap"><div class="gcal-scroll"><div class="gcal-grid" id="gcalGrid"></div></div></div>
-
       <div class="section-head"><h2>Add a time block</h2><span>SELECT A DAY, THEN ADD</span></div>
       <div class="routine-daytabs" id="routineDayTabs"></div>
       <div class="card">
@@ -761,6 +757,10 @@
           <button class="note-add-btn" id="routineAddBtn">+ Add</button>
         </div>
       </div>
+
+      <div class="section-head"><h2>Daily routine</h2><span><button id="connectGCalBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">📅 Connect Google Calendar</button></span></div>
+      <div id="gcalStatus" class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;"></div>
+      <div class="gcal-wrap"><div class="gcal-scroll"><div class="gcal-grid" id="gcalGrid"></div></div></div>
     </div>
     <div style="height:60px"></div>
   </div>
