@@ -1693,10 +1693,16 @@
     const btn = document.getElementById('resAddBtn');
     if(file){
       btn.textContent = 'Uploading…'; btn.disabled = true;
-      const path = `journal-media/${currentUser.uid}/resources-${Date.now()}-${file.name}`;
-      const sref = storageRef(storage, path);
-      await uploadBytes(sref, file);
-      link = await getDownloadURL(sref);
+      try{
+        const path = `journal-media/${currentUser.uid}/resources-${Date.now()}-${file.name}`;
+        const sref = storageRef(storage, path);
+        await uploadBytes(sref, file);
+        link = await getDownloadURL(sref);
+      }catch(err){
+        alert('Upload failed: ' + (err.message || err.code || 'unknown error') + '\n\nCheck that Storage rules are published, and that you\'re still signed in.');
+        btn.textContent = '+ Add resource'; btn.disabled = false;
+        return;
+      }
       btn.textContent = '+ Add resource'; btn.disabled = false;
     }
 
@@ -1834,10 +1840,16 @@
     const btn = document.getElementById('overallResAddBtn');
     if(file){
       btn.textContent = 'Uploading…'; btn.disabled = true;
-      const path = `journal-media/${currentUser.uid}/resources-${Date.now()}-${file.name}`;
-      const sref = storageRef(storage, path);
-      await uploadBytes(sref, file);
-      link = await getDownloadURL(sref);
+      try{
+        const path = `journal-media/${currentUser.uid}/resources-${Date.now()}-${file.name}`;
+        const sref = storageRef(storage, path);
+        await uploadBytes(sref, file);
+        link = await getDownloadURL(sref);
+      }catch(err){
+        alert('Upload failed: ' + (err.message || err.code || 'unknown error') + '\n\nCheck that Storage rules are published, and that you\'re still signed in.');
+        btn.textContent = '+ Add'; btn.disabled = false;
+        return;
+      }
       btn.textContent = '+ Add'; btn.disabled = false;
     }
 
