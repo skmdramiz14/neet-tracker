@@ -134,7 +134,7 @@
   .subj-meta-row .warn-n{ color:var(--rust); }
   .subj-open{ position:absolute; top:16px; right:15px; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); opacity:0; transform:translateX(-4px); transition:all 0.18s ease; }
 
-  .main-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:24px; padding:0 28px 20px; align-items:start; }
+  .main-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:18px; padding:0 0 20px; align-items:start; }
   .panel{ background:var(--card); border:1px solid var(--line); border-radius:5px; margin-bottom:22px; overflow:hidden; }
   .panel-head{ display:flex; justify-content:space-between; align-items:center; padding:15px 18px; border-bottom:1px solid var(--line); }
   .panel-head h2{ font-family:'Fraunces',serif; font-weight:500; font-size:18px; margin:0; }
@@ -532,6 +532,18 @@
         <div class="ruler"><div class="ruler-ticks" id="rulerTicks"></div><div class="ruler-fill" id="rulerFill"></div></div>
       </div>
       <div class="section-head" id="ledgerSection"><h2>Subject ledger</h2><span>CLICK A SUBJECT TO OPEN IT</span></div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-head"><h2>Overall — All Subjects</h2><span class="count mono">AUTO-SYNCED</span></div>
+        <div class="panel-body">
+          <div class="stat-row" id="overallStatRow" style="margin-top:10px;"></div>
+          <div class="mono" style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--pencil);margin:14px 0 6px;">Overall exam reflection (not tied to one subject)</div>
+          <textarea id="overallNotes" placeholder="General thoughts on overall exam readiness, strategy, things cutting across subjects…" style="width:100%; min-height:70px; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:9px 11px; box-sizing:border-box;"></textarea>
+          <button class="note-add-btn" id="overallNotesSaveBtn" style="margin-top:8px;">Save reflection</button>
+          <div id="overallNotesSaved" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+        </div>
+      </div>
+
       <div class="subject-grid" id="subjectGrid"></div>
 
       <div class="section-head" id="weeklySection"><h2>Weekly planner</h2><span id="weekRangeLabel"></span></div>
@@ -963,6 +975,8 @@
   let quickRecall = [];
   let activeQrTab = 'All';
   let routineBlocks = [];
+  let overallData = { pct: 0, reflection: '' };
+  let overallDataDocId = null;
   let activeRoutineDay = null; // set after DOW_NAMES known
 
   const todayStrFn = () => new Date().toISOString().slice(0,10);
@@ -981,7 +995,7 @@
     const uid = currentUser.uid;
     const todayIso = todayStrFn();
 
-    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap, qrSnap, routineSnap] = await Promise.all([
+    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap, qrSnap, routineSnap, overallSnap] = await Promise.all([
       getDocs(query(collection(db,'scheduleItems'), where('userId','==',uid))),
       getDocs(query(collection(db,'notes'), where('userId','==',uid))),
       getDocs(query(collection(db,'tests'), where('userId','==',uid))),
@@ -995,6 +1009,7 @@
       getDocs(query(collection(db,'chatMessages'), where('userId','==',uid))),
       getDocs(query(collection(db,'quickRecall'), where('userId','==',uid))),
       getDocs(query(collection(db,'routineBlocks'), where('userId','==',uid))),
+      getDocs(query(collection(db,'overallData'), where('userId','==',uid))),
     ]);
 
     const allScheduleDocs = schedSnap.docs.map(d=>({ id:d.id, ...d.data() }));
@@ -1027,6 +1042,11 @@
     chatHistory = chatSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.ts||0) - (b.ts||0));
     quickRecall = qrSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (b.ts||0) - (a.ts||0));
     routineBlocks = routineSnap.docs.map(d=>({ id:d.id, ...d.data() }));
+    if(!overallSnap.empty){
+      const doc0 = overallSnap.docs[0];
+      overallDataDocId = doc0.id;
+      overallData = { pct: doc0.data().pct||0, reflection: doc0.data().reflection||'' };
+    }
 
     progSnap.docs.forEach(d=>{ const p=d.data(); if(subjectProgress[p.subject]) subjectProgress[p.subject].pct = p.pct||0; });
     SUBJECTS.forEach(s=>{
@@ -1063,6 +1083,51 @@
   document.getElementById('rulerFill').style.width = Math.min(100, Math.max(2,(elapsed/totalDays)*100)) + '%';
 
   /* ============ SUBJECT LEDGER (home, clickable) ============ */
+  function renderOverallLedger(){
+    const totalLectures = SUBJECTS.reduce((a,s)=> a + (subjectProgress[s.name]?.lecturesDone||0), 0);
+    const totalNotes = notes.length;
+    const totalBacklog = backlog.length;
+    const totalTests = tests.length;
+    const overallAvgTest = tests.length ? Math.round(tests.reduce((a,t)=>a+(t.score/t.max*100),0)/tests.length) : null;
+
+    document.getElementById('overallStatRow').innerHTML = [
+      { label:'Total lectures', val: totalLectures, unit:'all subjects', cls:'' },
+      { label:'Total notes', val: totalNotes, unit:'all subjects', cls:'gold' },
+      { label:'Total backlog', val: totalBacklog, unit:'open', cls: totalBacklog>0?'rust':'' },
+      { label:'Tests taken', val: totalTests, unit:'all time', cls:'' },
+      { label:'Overall avg score', val: overallAvgTest!==null?overallAvgTest:'—', unit: overallAvgTest!==null?'%':'', cls:'' },
+      { label:'Syllabus (overall)', val: overallData.pct, unit:'%', cls:'', editable:true },
+    ].map(s=>`<div class="stat-card ${s.cls}" ${s.editable?'id="overallPctCard" style="cursor:pointer;"':''}><div class="stat-label">${s.label}</div><div class="stat-val">${s.val} <span>${s.unit}</span></div>${s.editable?'<div class="stat-sub">Click to edit</div>':''}</div>`).join('');
+
+    const pctCard = document.getElementById('overallPctCard');
+    if(pctCard) pctCard.addEventListener('click', async ()=>{
+      const val = prompt('Set overall syllabus completion % (0-100):', overallData.pct);
+      if(val===null) return;
+      overallData.pct = Math.max(0, Math.min(100, parseInt(val)||0));
+      renderOverallLedger();
+      await saveOverallData();
+    });
+
+    document.getElementById('overallNotes').value = overallData.reflection || '';
+  }
+
+  async function saveOverallData(){
+    if(overallDataDocId){
+      await updateDoc(doc(db,'overallData',overallDataDocId), { pct: overallData.pct, reflection: overallData.reflection });
+    } else {
+      const ref = await addDoc(collection(db,'overallData'), { userId: currentUser.uid, pct: overallData.pct, reflection: overallData.reflection, createdAt: serverTimestamp() });
+      overallDataDocId = ref.id;
+    }
+  }
+
+  document.getElementById('overallNotesSaveBtn').addEventListener('click', async ()=>{
+    overallData.reflection = document.getElementById('overallNotes').value.trim();
+    await saveOverallData();
+    const savedEl = document.getElementById('overallNotesSaved');
+    savedEl.textContent = 'Saved just now.';
+    setTimeout(()=>{ savedEl.textContent = ''; }, 3000);
+  });
+
   function renderSubjectGrid(){
     document.getElementById('subjectGrid').innerHTML = SUBJECTS.map(s=>{
       const prog = subjectProgress[s.name];
@@ -1185,7 +1250,7 @@
     document.getElementById('schedTypeCustom').value = '';
     document.getElementById('schedTypeCustom').style.display = 'none';
     document.getElementById('schedType').value = 'lecture';
-    renderSchedule(); renderStats(); renderSubjectGrid(); renderWeeklyPlanner(); renderCalendar();
+    renderSchedule(); renderStats(); renderSubjectGrid(); renderWeeklyPlanner(); renderCalendar(); renderOverallLedger();
   });
 
   /* ============ BACKLOG (home) ============ */
@@ -1204,7 +1269,7 @@
     const item = backlog[idx]; backlog.splice(idx,1);
     const newDate = todayStrFn();
     schedule.push({ id, userId: currentUser.uid, date:newDate, time:'—', subject:item.subject, type:'revision', title:item.title, done:false });
-    renderBacklog(); renderSchedule(); renderStats(); renderSubjectGrid();
+    renderBacklog(); renderSchedule(); renderStats(); renderSubjectGrid(); renderOverallLedger();
     if(currentSubject) renderSubjectDetail(currentSubject);
     await updateDoc(doc(db,'scheduleItems',id), { date: newDate });
   }
@@ -1226,7 +1291,7 @@
     const ref = await addDoc(collection(db,'notes'), data);
     notes.unshift({ id: ref.id, ...data });
     document.getElementById('noteTitle').value=''; document.getElementById('noteBody').value='';
-    renderNotes(); renderSubjectGrid();
+    renderNotes(); renderSubjectGrid(); renderOverallLedger();
   });
 
   /* ============ CALENDAR (home) ============ */
@@ -1372,7 +1437,7 @@
 
   async function updateSubjectProgress(subject, pct){
     subjectProgress[subject].pct = pct;
-    renderSubjectDetail(subject); renderSubjectGrid();
+    renderSubjectDetail(subject); renderSubjectGrid(); renderOverallLedger();
     const existing = await getDocs(query(collection(db,'subjectProgress'), where('userId','==',currentUser.uid), where('subject','==',subject)));
     if(existing.empty){
       await addDoc(collection(db,'subjectProgress'), { userId:currentUser.uid, subject, pct });
@@ -2171,7 +2236,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
   function initialRenderAll(){
     renderStats(); renderSubjectGrid(); renderSchedule(); renderBacklog(); renderNotes(); renderCalendar();
     renderRevisionQueue(); renderMoodRow(); renderJournalList(); renderDistList(); renderSW(); renderSummary();
-    renderWeeklyPlanner(); renderMoodTrend(); renderPastSummaries(); renderChat(); renderQuickRecall(); renderRoutine();
+    renderWeeklyPlanner(); renderMoodTrend(); renderPastSummaries(); renderChat(); renderQuickRecall(); renderRoutine(); renderOverallLedger();
   }
   window.initialRenderAll = initialRenderAll;
 </script>
