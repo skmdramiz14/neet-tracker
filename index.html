@@ -532,19 +532,21 @@
     <div class="wrap">
       <div class="main-grid">
         <div>
-          <div class="panel" id="scheduleSection"><div class="panel-head"><h2>Today's schedule</h2><span style="display:flex;align-items:center;gap:10px;"><button id="printTodayBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:5px 10px;font-size:9px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">🖨 Print</button><span class="count mono" id="scheduleCount"></span></span></div>
+          <div class="panel" id="scheduleSection"><div class="panel-head"><h2>Today's schedule</h2><span style="display:flex;align-items:center;gap:10px;"><button id="printTodayBtn" class="mono" style="background:var(--ink);border:1px solid var(--ink);border-radius:20px;padding:6px 13px;font-size:9.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:#fff;">🖨 Print</button><span class="count mono" id="scheduleCount"></span></span></div>
             <div class="panel-body">
               <div class="note-form-row" style="margin-bottom:12px;">
                 <input type="text" id="schedTitle" placeholder="Add a task (e.g. Ch.12 — Human Reproduction)…">
                 <select id="schedSubject">
-                  <option>Physics</option><option>Physical Chemistry</option><option>Inorganic Chemistry</option><option>Organic Chemistry</option><option>Botany</option><option>Zoology</option>
+                  <option>Physics</option><option>Physical Chemistry</option><option>Inorganic Chemistry</option><option>Organic Chemistry</option><option>Botany</option><option>Zoology</option><option>All</option><option>Test</option>
                 </select>
-                <select id="schedType"><option value="lecture">Lecture</option><option value="revision">Revision</option><option value="test">Test</option></select>
-                <input type="time" id="schedTime" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
+                <select id="schedType"><option value="lecture">Lecture</option><option value="revision">Revision</option><option value="test">Test</option><option value="custom">Custom…</option></select>
+                <input type="text" id="schedTypeCustom" placeholder="Custom type (e.g. Book, Interview)" style="display:none; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:0 10px;">
+                <input type="time" id="schedTime" title="Start time" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
+                <input type="time" id="schedTimeEnd" title="End time" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
                 <input type="date" id="schedDate" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
                 <button class="note-add-btn" id="schedAddBtn">+ Add</button>
               </div>
-              <div class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;">Time + date optional (defaults to today, no time). Add a time to organize your day hour-by-hour.</div>
+              <div class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;">Start + end time optional (defaults to today, no time). Add both to see exactly how long each task should take.</div>
               <div id="scheduleList"></div>
             </div>
           </div>
@@ -625,7 +627,7 @@
       <div class="detail-stat-row" id="detailStatRow"></div>
 
       <div class="detail-two-col">
-        <div class="panel"><div class="panel-head"><h2>Today's schedule</h2><span style="display:flex;align-items:center;gap:8px;"><button id="printSubjBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:4px 9px;font-size:8.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">🖨 Print</button><span class="count mono" id="detailLecCount"></span></span></div><div class="panel-body" id="detailLecList"></div></div>
+        <div class="panel"><div class="panel-head"><h2>Today's schedule</h2><span style="display:flex;align-items:center;gap:8px;"><button id="printSubjBtn" class="mono" style="background:var(--ink);border:1px solid var(--ink);border-radius:20px;padding:5px 11px;font-size:9px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:#fff;">🖨 Print</button><span class="count mono" id="detailLecCount"></span></span></div><div class="panel-body" id="detailLecList"></div></div>
         <div class="panel"><div class="panel-head"><h2>Tests</h2><span class="count mono" id="detailTestCount"></span></div><div class="panel-body" id="detailTestList"></div></div>
       </div>
       <div class="detail-two-col">
@@ -757,6 +759,7 @@
           <select id="routineCategory"><option>Study</option><option>Sleep</option><option>Meal</option><option>Break</option><option>Exercise</option><option>Personal</option><option>Commute</option><option>Other</option></select>
           <button class="note-add-btn" id="routineAddBtn">+ Add</button>
         </div>
+        <input type="text" id="routineDescription" placeholder="Brief description (optional) — e.g. which chapter, what to cover, goal for this block…" style="width:100%; margin-top:8px; padding:9px 12px; border:1px solid var(--line); border-radius:3px; font-family:'Lora',serif; font-size:13px;">
       </div>
 
       <div class="section-head"><h2>Daily routine</h2><span><button id="connectGCalBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">📅 Connect Google Calendar</button></span></div>
@@ -816,6 +819,17 @@
   <div class="lightbox" id="lightbox">
     <button class="lightbox-close" id="lightboxClose">&times;</button>
     <div id="lightboxContent"></div>
+  </div>
+
+  <div class="lightbox" id="routineDetailModal">
+    <button class="lightbox-close" id="routineDetailClose">&times;</button>
+    <div class="card" style="width:min(420px,90vw); text-align:left;" onclick="event.stopPropagation()">
+      <span id="routineDetailCatBadge" class="res-type-badge" style="margin-bottom:10px; display:inline-block;"></span>
+      <h3 id="routineDetailName" style="font-family:'Fraunces',serif; font-weight:500; font-size:20px; margin:0 0 8px;"></h3>
+      <p id="routineDetailTime" class="mono" style="font-size:12px; color:var(--pencil); margin:0 0 14px; letter-spacing:0.04em;"></p>
+      <p id="routineDetailDesc" style="font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 18px;"></p>
+      <button class="note-add-btn" id="routineDetailDeleteBtn" style="background:var(--rust);">Delete this block</button>
+    </div>
   </div>
 
 <script type="module">
@@ -893,6 +907,10 @@
   ];
   const subjColor = (name)=> (SUBJECTS.find(s=>s.name===name)||{}).color || 'var(--pencil)';
   const PRINT_SUBJ_HEX = { 'Physics':'#3B5A75', 'Physical Chemistry':'#3F7A6B', 'Inorganic Chemistry':'#A9822C', 'Organic Chemistry':'#B0431F', 'Botany':'#2F4A3C', 'Zoology':'#6B3A4A' };
+  function timeRangeLabel(item){
+    if(!item.time) return '—';
+    return item.timeEnd ? `${item.time}–${item.timeEnd}` : item.time;
+  }
   const RES_TYPES = ['PDF','Book','Test Paper','Notes','Lecture','Other'];
   const resColor = (type)=> ({ 'PDF':'var(--r-pdf)','Book':'var(--r-book)','Test Paper':'var(--r-paper)','Notes':'var(--r-notes)','Lecture':'var(--r-lecture)','Other':'var(--r-other)' }[type] || 'var(--r-other)');
 
@@ -1071,7 +1089,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
         <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(s.subject)}"></span>${s.subject} · ${s.type}</div></div>
-        <div class="task-time mono">${s.time || '—'}</div>
+        <div class="task-time mono">${timeRangeLabel(s)}</div>
         <button class="del-btn" data-id="${s.id}" data-kind="sched" aria-label="Delete">✕</button>
       </div>`).join('');
     list.querySelectorAll('.task-check').forEach(el=>{
@@ -1125,21 +1143,28 @@
   document.getElementById('printTodayBtn').addEventListener('click', ()=>{
     const sorted = schedule.slice().sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
     const rows = sorted.map(s=>`<tr class="${s.done?'done':''}">
-      <td>${s.time||'—'}</td>
+      <td>${timeRangeLabel(s)}</td>
       <td><span class="subj-dot" style="background:${PRINT_SUBJ_HEX[s.subject]||'#888'}"></span>${s.subject}</td>
       <td>${s.type}</td><td>${s.title}</td><td>${s.done?'Done':'Pending'}</td></tr>`).join('');
     openPrintWindow(`Today's Schedule — ${todayStrFn()}`, rows || '<tr><td colspan="5">Nothing scheduled.</td></tr>');
   });
 
 
+  document.getElementById('schedType').addEventListener('change', (e)=>{
+    document.getElementById('schedTypeCustom').style.display = e.target.value==='custom' ? 'block' : 'none';
+  });
+
   document.getElementById('schedAddBtn').addEventListener('click', async ()=>{
     const title = document.getElementById('schedTitle').value.trim();
     if(!title) return;
     const subject = document.getElementById('schedSubject').value;
-    const type = document.getElementById('schedType').value;
+    const typeSelect = document.getElementById('schedType').value;
+    const customType = document.getElementById('schedTypeCustom').value.trim();
+    const type = typeSelect==='custom' ? (customType || 'custom') : typeSelect;
     const pickedDate = document.getElementById('schedDate').value || todayStrFn();
     const pickedTime = document.getElementById('schedTime').value || '';
-    const data = { userId: currentUser.uid, date: pickedDate, time: pickedTime, subject, type, title, done:false, createdAt: serverTimestamp() };
+    const pickedTimeEnd = document.getElementById('schedTimeEnd').value || '';
+    const data = { userId: currentUser.uid, date: pickedDate, time: pickedTime, timeEnd: pickedTimeEnd, subject, type, title, done:false, createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'scheduleItems'), data);
     const newItem = { id: ref.id, ...data };
     allScheduleItems.push(newItem);
@@ -1147,6 +1172,10 @@
     document.getElementById('schedTitle').value = '';
     document.getElementById('schedDate').value = '';
     document.getElementById('schedTime').value = '';
+    document.getElementById('schedTimeEnd').value = '';
+    document.getElementById('schedTypeCustom').value = '';
+    document.getElementById('schedTypeCustom').style.display = 'none';
+    document.getElementById('schedType').value = 'lecture';
     renderSchedule(); renderStats(); renderSubjectGrid(); renderWeeklyPlanner(); renderCalendar();
   });
 
@@ -1269,7 +1298,7 @@
     if(!currentSubject) return;
     const items = schedule.filter(s=>s.subject===currentSubject).sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
     const rows = items.map(s=>`<tr class="${s.done?'done':''}">
-      <td>${s.time||'—'}</td>
+      <td>${timeRangeLabel(s)}</td>
       <td><span class="subj-dot" style="background:${PRINT_SUBJ_HEX[s.subject]||'#888'}"></span>${s.subject}</td>
       <td>${s.type}</td><td>${s.title}</td><td>${s.done?'Done':'Pending'}</td></tr>`).join('');
     openPrintWindow(`${currentSubject} — Today's Schedule — ${todayStrFn()}`, rows || '<tr><td colspan="5">Nothing scheduled for this subject today.</td></tr>');
@@ -1307,7 +1336,7 @@
     document.getElementById('detailLecCount').textContent = subjLec.length + ' LOGGED';
     document.getElementById('detailLecList').innerHTML = subjLec.length ? subjLec.map(s=>`
       <div class="task-row"><div class="task-check ${s.done?'done':''}" style="cursor:default;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
-      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag">${s.type}</div></div><div class="task-time mono">${s.time || '—'}</div></div>`).join('')
+      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag">${s.type}</div></div><div class="task-time mono">${timeRangeLabel(s)}</div></div>`).join('')
       : '<div class="empty-note">No schedule logged yet for this subject today.</div>';
 
     document.getElementById('detailTestCount').textContent = subjTests.length + ' TAKEN';
@@ -1735,7 +1764,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
       const items = allScheduleItems.filter(s => s.date === dayIso).sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
       return `<div class="week-col ${d===todayName?'is-today':''}">
         <div class="week-col-head">${d} ${dayDate.getDate()}</div>
-        ${items.length ? items.map(i=>`<div class="week-chip"><span class="dot" style="background:${subjColor(i.subject)}"></span>${i.time?`<b style="font-family:'JetBrains Mono',monospace;font-weight:600;">${i.time}</b> `:''}${i.title}</div>`).join('') : '<div class="week-empty">—</div>'}
+        ${items.length ? items.map(i=>`<div class="week-chip"><span class="dot" style="background:${subjColor(i.subject)}"></span>${i.time?`<b style="font-family:'JetBrains Mono',monospace;font-weight:600;">${timeRangeLabel(i)}</b> `:''}${i.title}</div>`).join('') : '<div class="week-empty">—</div>'}
       </div>`;
     }).join('');
   }
@@ -2071,16 +2100,14 @@ Recent journal entries: ${recentJournalText || 'none logged'}
         const durMin = timeToMinutes(r.end)-timeToMinutes(r.start);
         const height = Math.max(22, (durMin/60) * GCAL_HOUR_HEIGHT);
         const showTime = height >= 30;
-        html += `<div class="gcal-block" data-id="${r.id}" style="top:${top}px; height:${height}px; background:${ROUTINE_CAT_COLORS[r.category]||'var(--pencil)'};" title="${r.activity} (${r.start}–${r.end}) — click to delete"><b>${r.activity}</b>${showTime?`<span class="gcal-time">${r.start}–${r.end}</span>`:''}</div>`;
+        html += `<div class="gcal-block" data-id="${r.id}" style="top:${top}px; height:${height}px; background:${ROUTINE_CAT_COLORS[r.category]||'var(--pencil)'};" title="${r.activity} (${r.start}–${r.end}) — click for details"><b>${r.activity}</b>${showTime?`<span class="gcal-time">${r.start}–${r.end}</span>`:''}</div>`;
       });
       html += `</div>`;
     });
 
     document.getElementById('gcalGrid').innerHTML = html;
     document.querySelectorAll('.gcal-block').forEach(el=>{
-      el.addEventListener('click', ()=>{
-        if(confirm('Delete this time block?')) deleteItem('routineBlocks', el.dataset.id, routineBlocks, renderGCalGrid);
-      });
+      el.addEventListener('click', ()=> openRoutineDetail(el.dataset.id));
     });
 
     // Auto-scroll to ~6 AM on first render so the useful part of the day is visible immediately.
@@ -2093,16 +2120,40 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     renderGCalGrid();
   }
 
+  let routineDetailCurrentId = null;
+  function openRoutineDetail(id){
+    const r = routineBlocks.find(b=>b.id===id);
+    if(!r) return;
+    routineDetailCurrentId = id;
+    document.getElementById('routineDetailCatBadge').textContent = r.category;
+    document.getElementById('routineDetailCatBadge').style.background = ROUTINE_CAT_COLORS[r.category] || 'var(--pencil)';
+    document.getElementById('routineDetailName').textContent = r.activity;
+    document.getElementById('routineDetailTime').textContent = `${r.day} · ${r.start}–${r.end}`;
+    document.getElementById('routineDetailDesc').textContent = r.description || 'No description added.';
+    document.getElementById('routineDetailModal').classList.add('open');
+  }
+  document.getElementById('routineDetailClose').addEventListener('click', ()=> document.getElementById('routineDetailModal').classList.remove('open'));
+  document.getElementById('routineDetailModal').addEventListener('click', (e)=>{ if(e.target.id==='routineDetailModal') document.getElementById('routineDetailModal').classList.remove('open'); });
+  document.getElementById('routineDetailDeleteBtn').addEventListener('click', ()=>{
+    if(!routineDetailCurrentId) return;
+    if(confirm('Delete this time block?')){
+      deleteItem('routineBlocks', routineDetailCurrentId, routineBlocks, renderGCalGrid);
+      document.getElementById('routineDetailModal').classList.remove('open');
+    }
+  });
+
   document.getElementById('routineAddBtn').addEventListener('click', async ()=>{
     const start = document.getElementById('routineStart').value;
     const end = document.getElementById('routineEnd').value;
     const activity = document.getElementById('routineActivity').value.trim();
     const category = document.getElementById('routineCategory').value;
+    const description = document.getElementById('routineDescription').value.trim();
     if(!start || !end || !activity || !currentUser) return;
-    const data = { userId: currentUser.uid, day: activeRoutineDay, start, end, activity, category, createdAt: serverTimestamp() };
+    const data = { userId: currentUser.uid, day: activeRoutineDay, start, end, activity, category, description, createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'routineBlocks'), data);
     routineBlocks.push({ id: ref.id, ...data });
     document.getElementById('routineActivity').value = '';
+    document.getElementById('routineDescription').value = '';
     renderGCalGrid();
     pushToGoogleCalendar(activeRoutineDay, start, end, activity);
   });
