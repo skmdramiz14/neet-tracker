@@ -532,18 +532,19 @@
     <div class="wrap">
       <div class="main-grid">
         <div>
-          <div class="panel" id="scheduleSection"><div class="panel-head"><h2>Today's schedule</h2><span class="count mono" id="scheduleCount"></span></div>
+          <div class="panel" id="scheduleSection"><div class="panel-head"><h2>Today's schedule</h2><span style="display:flex;align-items:center;gap:10px;"><button id="printTodayBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:5px 10px;font-size:9px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">🖨 Print</button><span class="count mono" id="scheduleCount"></span></span></div>
             <div class="panel-body">
               <div class="note-form-row" style="margin-bottom:12px;">
-                <input type="text" id="schedTitle" placeholder="Add a task…">
+                <input type="text" id="schedTitle" placeholder="Add a task (e.g. Ch.12 — Human Reproduction)…">
                 <select id="schedSubject">
                   <option>Physics</option><option>Physical Chemistry</option><option>Inorganic Chemistry</option><option>Organic Chemistry</option><option>Botany</option><option>Zoology</option>
                 </select>
                 <select id="schedType"><option value="lecture">Lecture</option><option value="revision">Revision</option><option value="test">Test</option></select>
+                <input type="time" id="schedTime" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
                 <input type="date" id="schedDate" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
                 <button class="note-add-btn" id="schedAddBtn">+ Add</button>
               </div>
-              <div class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;">Leave date blank for today, or pick a future date to plan ahead for the week.</div>
+              <div class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;">Time + date optional (defaults to today, no time). Add a time to organize your day hour-by-hour.</div>
               <div id="scheduleList"></div>
             </div>
           </div>
@@ -624,7 +625,7 @@
       <div class="detail-stat-row" id="detailStatRow"></div>
 
       <div class="detail-two-col">
-        <div class="panel"><div class="panel-head"><h2>Lectures & revision</h2><span class="count mono" id="detailLecCount"></span></div><div class="panel-body" id="detailLecList"></div></div>
+        <div class="panel"><div class="panel-head"><h2>Today's schedule</h2><span style="display:flex;align-items:center;gap:8px;"><button id="printSubjBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:4px 9px;font-size:8.5px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">🖨 Print</button><span class="count mono" id="detailLecCount"></span></span></div><div class="panel-body" id="detailLecList"></div></div>
         <div class="panel"><div class="panel-head"><h2>Tests</h2><span class="count mono" id="detailTestCount"></span></div><div class="panel-body" id="detailTestList"></div></div>
       </div>
       <div class="detail-two-col">
@@ -891,6 +892,7 @@
     { name:'Zoology',              group:'Biology',   color:'var(--s-zoology)' },
   ];
   const subjColor = (name)=> (SUBJECTS.find(s=>s.name===name)||{}).color || 'var(--pencil)';
+  const PRINT_SUBJ_HEX = { 'Physics':'#3B5A75', 'Physical Chemistry':'#3F7A6B', 'Inorganic Chemistry':'#A9822C', 'Organic Chemistry':'#B0431F', 'Botany':'#2F4A3C', 'Zoology':'#6B3A4A' };
   const RES_TYPES = ['PDF','Book','Test Paper','Notes','Lecture','Other'];
   const resColor = (type)=> ({ 'PDF':'var(--r-pdf)','Book':'var(--r-book)','Test Paper':'var(--r-paper)','Notes':'var(--r-notes)','Lecture':'var(--r-lecture)','Other':'var(--r-other)' }[type] || 'var(--r-other)');
 
@@ -1062,13 +1064,14 @@
     const list = document.getElementById('scheduleList');
     document.getElementById('scheduleCount').textContent = schedule.filter(s=>s.done).length + ' / ' + schedule.length + ' DONE';
     if(schedule.length===0){ list.innerHTML = '<div class="empty-note">Nothing scheduled — add a plan for today.</div>'; return; }
-    list.innerHTML = schedule.map(s=>`
+    const sorted = schedule.slice().sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
+    list.innerHTML = sorted.map(s=>`
       <div class="task-row">
         <div class="task-check ${s.done?'done':''}" data-id="${s.id}" role="checkbox" aria-checked="${s.done}" tabindex="0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
         <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(s.subject)}"></span>${s.subject} · ${s.type}</div></div>
-        <div class="task-time mono">${s.time}</div>
+        <div class="task-time mono">${s.time || '—'}</div>
         <button class="del-btn" data-id="${s.id}" data-kind="sched" aria-label="Delete">✕</button>
       </div>`).join('');
     list.querySelectorAll('.task-check').forEach(el=>{
@@ -1089,19 +1092,61 @@
     await updateDoc(doc(db,'scheduleItems',id), { done: item.done });
   }
 
+  /* ============ PRINT / SAVE AS PDF ============ */
+  function openPrintWindow(title, rowsHtml){
+    const html = `<!DOCTYPE html><html><head><title>${title}</title>
+      <style>
+        body{ font-family: Georgia, serif; padding: 40px; color:#1C2B39; }
+        h1{ font-family: Georgia, serif; font-size: 22px; margin-bottom: 4px; }
+        p.meta{ font-family: monospace; font-size: 11px; color: #8B8478; margin-top:0; margin-bottom: 24px; }
+        table{ width:100%; border-collapse: collapse; }
+        th{ text-align:left; font-family: monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color:#8B8478; border-bottom: 1.5px solid #1C2B39; padding: 8px 6px; }
+        td{ padding: 9px 6px; border-bottom: 1px solid #ddd; font-size: 13px; vertical-align: top; }
+        tr.done td{ color: #999; text-decoration: line-through; }
+        .subj-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
+        @media print{ body{ padding: 20px; } }
+      </style>
+      </head><body>
+      <h1>${title}</h1>
+      <p class="meta">Field Notes · NEET 2027 · Printed ${new Date().toLocaleString()}</p>
+      <table>
+        <tr><th>Time</th><th>Subject</th><th>Type</th><th>Activity</th><th>Status</th></tr>
+        ${rowsHtml}
+      </table>
+      </body></html>`;
+    const w = window.open('', '_blank');
+    if(!w){ alert('Please allow pop-ups to print.'); return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(()=> w.print(), 350);
+  }
+
+  document.getElementById('printTodayBtn').addEventListener('click', ()=>{
+    const sorted = schedule.slice().sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
+    const rows = sorted.map(s=>`<tr class="${s.done?'done':''}">
+      <td>${s.time||'—'}</td>
+      <td><span class="subj-dot" style="background:${PRINT_SUBJ_HEX[s.subject]||'#888'}"></span>${s.subject}</td>
+      <td>${s.type}</td><td>${s.title}</td><td>${s.done?'Done':'Pending'}</td></tr>`).join('');
+    openPrintWindow(`Today's Schedule — ${todayStrFn()}`, rows || '<tr><td colspan="5">Nothing scheduled.</td></tr>');
+  });
+
+
   document.getElementById('schedAddBtn').addEventListener('click', async ()=>{
     const title = document.getElementById('schedTitle').value.trim();
     if(!title) return;
     const subject = document.getElementById('schedSubject').value;
     const type = document.getElementById('schedType').value;
     const pickedDate = document.getElementById('schedDate').value || todayStrFn();
-    const data = { userId: currentUser.uid, date: pickedDate, time:'—', subject, type, title, done:false, createdAt: serverTimestamp() };
+    const pickedTime = document.getElementById('schedTime').value || '';
+    const data = { userId: currentUser.uid, date: pickedDate, time: pickedTime, subject, type, title, done:false, createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'scheduleItems'), data);
     const newItem = { id: ref.id, ...data };
     allScheduleItems.push(newItem);
     if(pickedDate === todayStrFn()) schedule.push(newItem);
     document.getElementById('schedTitle').value = '';
     document.getElementById('schedDate').value = '';
+    document.getElementById('schedTime').value = '';
     renderSchedule(); renderStats(); renderSubjectGrid(); renderWeeklyPlanner(); renderCalendar();
   });
 
@@ -1220,6 +1265,16 @@
   }
   document.getElementById('backBtn').addEventListener('click', closeSubject);
 
+  document.getElementById('printSubjBtn').addEventListener('click', ()=>{
+    if(!currentSubject) return;
+    const items = schedule.filter(s=>s.subject===currentSubject).sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
+    const rows = items.map(s=>`<tr class="${s.done?'done':''}">
+      <td>${s.time||'—'}</td>
+      <td><span class="subj-dot" style="background:${PRINT_SUBJ_HEX[s.subject]||'#888'}"></span>${s.subject}</td>
+      <td>${s.type}</td><td>${s.title}</td><td>${s.done?'Done':'Pending'}</td></tr>`).join('');
+    openPrintWindow(`${currentSubject} — Today's Schedule — ${todayStrFn()}`, rows || '<tr><td colspan="5">Nothing scheduled for this subject today.</td></tr>');
+  });
+
   function renderSubjectDetail(name){
     const meta = SUBJECTS.find(s=>s.name===name);
     const prog = subjectProgress[name];
@@ -1230,7 +1285,7 @@
     const subjNotes = notes.filter(n=>n.subject===name);
     const subjBacklog = backlog.filter(b=>b.subject===name);
     const subjTests = tests.filter(t=>t.subject===name);
-    const subjLec = schedule.filter(s=>s.subject===name && (s.type==='lecture'||s.type==='revision'));
+    const subjLec = schedule.filter(s=>s.subject===name).sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
     const avgScore = subjTests.length ? Math.round(subjTests.reduce((a,t)=>a+(t.score/t.max*100),0)/subjTests.length) : prog.avgTest;
 
     document.getElementById('detailStatRow').innerHTML = [
@@ -1252,8 +1307,8 @@
     document.getElementById('detailLecCount').textContent = subjLec.length + ' LOGGED';
     document.getElementById('detailLecList').innerHTML = subjLec.length ? subjLec.map(s=>`
       <div class="task-row"><div class="task-check ${s.done?'done':''}" style="cursor:default;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
-      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag">${s.type}</div></div><div class="task-time mono">${s.time}</div></div>`).join('')
-      : '<div class="empty-note">No lectures logged yet for this subject.</div>';
+      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag">${s.type}</div></div><div class="task-time mono">${s.time || '—'}</div></div>`).join('')
+      : '<div class="empty-note">No schedule logged yet for this subject today.</div>';
 
     document.getElementById('detailTestCount').textContent = subjTests.length + ' TAKEN';
     document.getElementById('detailTestList').innerHTML = subjTests.length ? subjTests.map(t=>`
@@ -1515,9 +1570,9 @@
   /* ---- Distraction log ---- */
   function renderDistList(){
     document.getElementById('distCount').textContent = distractions.length + ' LOGGED';
-    document.getElementById('distList').innerHTML = distractions.length ? distractions.map(d=>`
-      <div class="dist-row"><span>${d.desc}</span><span style="display:flex;align-items:center;gap:8px;"><span class="dist-meta">${d.duration}m · ${d.subject}</span><button class="del-btn" data-id="${d.id}" aria-label="Delete">✕</button></span></div>`).join('')
-      : '<div class="empty-note">No distractions logged today.</div>';
+    document.getElementById('distList').innerHTML = distractions.length ? distractions.slice(0,15).map(d=>`
+      <div class="dist-row"><span>${d.desc}</span><span style="display:flex;align-items:center;gap:8px;"><span class="dist-meta">${d.duration}m · ${d.subject} · ${d.date}</span><button class="del-btn" data-id="${d.id}" aria-label="Delete">✕</button></span></div>`).join('')
+      : '<div class="empty-note">No distractions logged yet.</div>';
     document.querySelectorAll('#distList .del-btn').forEach(b=> b.addEventListener('click', ()=>deleteItem('distractions', b.dataset.id, distractions, renderDistList)));
   }
   document.getElementById('distAddBtn').addEventListener('click', async ()=>{
@@ -1677,10 +1732,10 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     document.getElementById('weekGrid').innerHTML = order.map((d, i)=>{
       const dayDate = new Date(monday); dayDate.setDate(monday.getDate() + i);
       const dayIso = dayDate.toISOString().slice(0,10);
-      const items = allScheduleItems.filter(s => s.date === dayIso);
+      const items = allScheduleItems.filter(s => s.date === dayIso).sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
       return `<div class="week-col ${d===todayName?'is-today':''}">
         <div class="week-col-head">${d} ${dayDate.getDate()}</div>
-        ${items.length ? items.map(i=>`<div class="week-chip"><span class="dot" style="background:${subjColor(i.subject)}"></span>${i.title}</div>`).join('') : '<div class="week-empty">—</div>'}
+        ${items.length ? items.map(i=>`<div class="week-chip"><span class="dot" style="background:${subjColor(i.subject)}"></span>${i.time?`<b style="font-family:'JetBrains Mono',monospace;font-weight:600;">${i.time}</b> `:''}${i.title}</div>`).join('') : '<div class="week-empty">—</div>'}
       </div>`;
     }).join('');
   }
@@ -1718,6 +1773,7 @@ Recent journal entries: ${recentJournalText || 'none logged'}
     schedule.forEach(s=> items.push({ type:'Schedule', title:s.title, meta:s.subject, subject:s.subject }));
     journalEntries.forEach(j=> items.push({ type:'Journal', title:j.text.slice(0,60)+(j.text.length>60?'…':''), meta:j.date, subject:null }));
     quickRecall.forEach(q=> items.push({ type:'Quick Recall', title:q.content.slice(0,60)+(q.content.length>60?'…':''), meta:q.category, subject:q.subject||null }));
+    routineBlocks.forEach(r=> items.push({ type:'Routine', title:r.activity, meta:`${r.day} ${r.start}`, subject:null }));
     return items;
   }
   function renderSearchResults(query){
@@ -1741,6 +1797,8 @@ Recent journal entries: ${recentJournalText || 'none logged'}
         const subj = el.dataset.subject; const type = el.dataset.type;
         closeSearch();
         if(type==='Journal'){ openJournal(); }
+        else if(type==='Routine'){ openRoutine(); }
+        else if(type==='Quick Recall'){ closeSubject(); closeJournal(); closeRoutine(); requestAnimationFrame(()=>{ const t = document.getElementById('quickRecallSection'); if(t) t.scrollIntoView({behavior:'smooth'}); }); }
         else if(subj){ openSubject(subj); }
         else { closeSubject(); requestAnimationFrame(()=>{ const t = document.getElementById(type==='Backlog'?'backlogSection':'scheduleSection'); if(t) t.scrollIntoView({behavior:'smooth'}); }); }
       });
