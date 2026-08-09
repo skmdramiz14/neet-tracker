@@ -734,13 +734,31 @@
       </div>
 
       <div class="detail-two-col">
-        <div class="panel"><div class="panel-head"><h2>All lectures & revision</h2><span class="count mono" id="overallLecCount"></span></div><div class="panel-body" id="overallLecList"></div></div>
+        <div class="panel"><div class="panel-head"><h2>Today's full schedule</h2><span class="count mono" id="overallLecCount"></span></div><div class="panel-body" id="overallLecList"></div></div>
         <div class="panel"><div class="panel-head"><h2>All tests</h2><span class="count mono" id="overallTestCount"></span></div><div class="panel-body" id="overallTestList"></div></div>
       </div>
       <div class="detail-two-col">
         <div class="panel"><div class="panel-head"><h2>All notes</h2><span class="count mono" id="overallNoteCount"></span></div><div class="panel-body" id="overallNoteList"></div></div>
         <div class="panel"><div class="panel-head"><h2>All backlog</h2><span class="count mono" id="overallBacklogCount"></span></div><div class="panel-body" id="overallBacklogList"></div></div>
       </div>
+
+      <div class="section-head"><h2>Resources</h2><span id="overallResCount"></span></div>
+      <div class="row-flex" id="overallResTabs" style="margin-bottom:14px;"></div>
+      <div class="card">
+        <div class="row-flex">
+          <input type="text" id="overallResTitle" class="field" placeholder="Resource title (not tied to one subject)" style="flex:1 1 200px;">
+          <select id="overallResType" class="field">
+            <option>PDF</option><option>Book</option><option>Test Paper</option><option>Notes</option><option>Lecture</option><option>Other</option>
+          </select>
+          <input type="text" id="overallResLink" class="field" placeholder="Link or note (optional)" style="flex:1 1 200px;">
+          <button class="note-add-btn" id="overallResAddBtn">+ Add</button>
+        </div>
+      </div>
+      <div class="subject-grid" id="overallResGrid"></div>
+
+      <div class="section-head"><h2>Syllabus map — all subjects</h2><span id="overallSylCount"></span></div>
+      <div class="row-flex" id="overallSylFilterTabs" style="margin-bottom:14px;"></div>
+      <div id="overallSylList"></div>
     </div>
     <div style="height:60px"></div>
   </div>
@@ -1051,6 +1069,8 @@
   let syllabusItems = [];
   let activeSylTab = 'All';
   let sylSelectedCats = [];
+  let activeOverallSylTab = 'All';
+  let activeOverallResTab = 'All';
   let activeRoutineDay = null; // set after DOW_NAMES known
 
   const todayStrFn = () => new Date().toISOString().slice(0,10);
@@ -1759,6 +1779,70 @@
   }
   document.getElementById('overallBackBtn').addEventListener('click', closeOverallDetail);
 
+  function renderOverallResources(){
+    const RES_TYPES = ['PDF','Book','Test Paper','Notes','Lecture','Other'];
+    const all = Object.entries(resources).flatMap(([subj, list])=> list.map(r=>({ ...r, subject: subj })));
+    document.getElementById('overallResCount').textContent = all.length + ' TOTAL';
+
+    document.getElementById('overallResTabs').innerHTML = ['All', ...RES_TYPES].map(t=>{
+      const n = t==='All' ? all.length : all.filter(r=>r.type===t).length;
+      return `<button class="pill ${activeOverallResTab===t?'active':''}" data-tab="${t}">${t} (${n})</button>`;
+    }).join('');
+    document.querySelectorAll('#overallResTabs .pill').forEach(b=> b.addEventListener('click', ()=>{ activeOverallResTab=b.dataset.tab; renderOverallResources(); }));
+
+    const shown = activeOverallResTab==='All' ? all : all.filter(r=>r.type===activeOverallResTab);
+    document.getElementById('overallResGrid').innerHTML = shown.length ? shown.map(r=>`
+      <div class="subj-card">
+        <span class="mono" style="font-size:9px;text-transform:uppercase;color:#fff;background:${resColor(r.type)};padding:3px 8px;border-radius:10px;display:inline-block;margin-bottom:8px;">${r.type}</span>
+        ${r.subject!=='Overall' ? `<div class="subj-tag" style="color:${subjColor(r.subject)};margin-bottom:5px;"><span class="dot" style="background:${subjColor(r.subject)}"></span>${r.subject}</div>` : ''}
+        <div class="row-title">${r.title}</div>
+        ${r.link ? `<div class="mono" style="font-size:10px;color:var(--ink-soft);margin-top:6px;word-break:break-all;">${r.link}</div>` : ''}
+      </div>`).join('') : '<div class="empty-note">Nothing saved yet.</div>';
+  }
+
+  document.getElementById('overallResAddBtn').addEventListener('click', async ()=>{
+    const title = document.getElementById('overallResTitle').value.trim();
+    if(!title || !currentUser) return;
+    const type = document.getElementById('overallResType').value;
+    const link = document.getElementById('overallResLink').value.trim();
+    const data = { userId: currentUser.uid, subject:'Overall', type, title, link, note:'', createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'resources'), data);
+    if(!resources['Overall']) resources['Overall'] = [];
+    resources['Overall'].unshift({ id: ref.id, type, title, link, note:'' });
+    document.getElementById('overallResTitle').value = '';
+    document.getElementById('overallResLink').value = '';
+    renderOverallResources();
+  });
+
+  function renderOverallSyllabusMap(){
+    document.getElementById('overallSylCount').textContent = syllabusItems.length + ' TOTAL';
+    document.getElementById('overallSylFilterTabs').innerHTML = ['All', ...SYL_CATEGORIES].map(c=>{
+      const n = c==='All' ? syllabusItems.length : syllabusItems.filter(i=>(i.categories||[]).includes(c)).length;
+      return `<button class="pill ${activeOverallSylTab===c?'active':''}" data-tab="${c}">${c} (${n})</button>`;
+    }).join('');
+    document.querySelectorAll('#overallSylFilterTabs .pill').forEach(b=> b.addEventListener('click', ()=>{ activeOverallSylTab=b.dataset.tab; renderOverallSyllabusMap(); }));
+
+    const shown = activeOverallSylTab==='All' ? syllabusItems : syllabusItems.filter(i=>(i.categories||[]).includes(activeOverallSylTab));
+    document.getElementById('overallSylList').innerHTML = shown.length ? shown.map(s=>`
+      <div class="syl-card">
+        <div class="syl-card-head">
+          <div>
+            <div class="subj-tag" style="margin-bottom:4px;color:${subjColor(s.subject)}"><span class="dot" style="background:${subjColor(s.subject)}"></span>${s.subject}</div>
+            <div class="syl-chapter">${s.chapter}</div>
+            ${s.topic ? `<div class="syl-topic">${s.topic}</div>` : ''}
+          </div>
+        </div>
+        <div class="syl-meta-row">
+          ${s.weightage ? `<div class="syl-meta-item">Weightage<b>${s.weightage}</b></div>` : ''}
+          ${s.pyq ? `<div class="syl-meta-item">PYQ Count<b>${s.pyq}</b></div>` : ''}
+          <div class="syl-meta-item">Difficulty
+            <div class="syl-diff-dots">${[1,2,3,4,5].map(n=>`<span class="${n<=(s.difficulty||3)?'filled':''}"></span>`).join('')}</div>
+          </div>
+        </div>
+        ${(s.categories&&s.categories.length) ? `<div class="syl-cat-tags">${s.categories.map(c=>`<span class="syl-cat-tag">${c}</span>`).join('')}</div>` : ''}
+      </div>`).join('') : '<div class="empty-note">No chapters mapped yet across any subject.</div>';
+  }
+
   function renderOverallDetail(){
     const totalLectures = SUBJECTS.reduce((a,s)=> a + (subjectProgress[s.name]?.lecturesDone||0), 0);
     const totalNotes = notes.length;
@@ -1776,11 +1860,11 @@
 
     document.getElementById('overallDetailNotes').value = overallData.reflection || '';
 
-    const allLec = schedule.filter(s=>s.type==='lecture'||s.type==='revision');
+    const allLec = schedule.slice().sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
     document.getElementById('overallLecCount').textContent = allLec.length + ' TODAY';
     document.getElementById('overallLecList').innerHTML = allLec.length ? allLec.map(s=>`
       <div class="task-row"><div class="task-check ${s.done?'done':''}" style="cursor:default;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
-      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(s.subject)}"></span>${s.subject}</div></div><div class="task-time mono">${timeRangeLabel(s)}</div></div>`).join('')
+      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(s.subject)}"></span>${s.subject} · ${s.type}</div></div><div class="task-time mono">${timeRangeLabel(s)}</div></div>`).join('')
       : '<div class="empty-note">Nothing scheduled today.</div>';
 
     document.getElementById('overallTestCount').textContent = tests.length + ' TAKEN';
@@ -1797,6 +1881,9 @@
     document.getElementById('overallBacklogList').innerHTML = backlog.length ? backlog.map(b=>`
       <div class="backlog-row"><span class="backlog-age">${b.daysOld}d old</span><div class="backlog-main"><div class="backlog-title">${b.title}</div><div class="subj-tag">${b.subject}</div></div></div>`).join('')
       : '<div class="empty-note">Backlog clear.</div>';
+
+    renderOverallSyllabusMap();
+    renderOverallResources();
   }
 
   document.getElementById('overallDetailNotesSaveBtn').addEventListener('click', async ()=>{
