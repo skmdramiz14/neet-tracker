@@ -1023,6 +1023,15 @@
   }
   const RES_TYPES = ['PDF','Book','Test Paper','Notes','Lecture','Other'];
   const resColor = (type)=> ({ 'PDF':'var(--r-pdf)','Book':'var(--r-book)','Test Paper':'var(--r-paper)','Notes':'var(--r-notes)','Lecture':'var(--r-lecture)','Other':'var(--r-other)' }[type] || 'var(--r-other)');
+  function renderResLink(link){
+    if(!link) return `<span class="res-link disabled">No link attached</span>`;
+    const looksLikeUrl = /^https?:\/\//i.test(link) || /^www\./i.test(link) || /\.[a-z]{2,}(\/|$)/i.test(link.split(' ')[0]||'');
+    if(looksLikeUrl){
+      const href = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+      return `<a class="res-link" href="${href}" target="_blank" rel="noopener noreferrer">${link} ↗</a>`;
+    }
+    return `<div class="res-note" style="margin-top:4px;">${link}</div>`;
+  }
 
   /* ============ DATE / EXAM COUNTDOWN ============ */
   const START = new Date('2026-08-04');
@@ -1585,7 +1594,7 @@
         </div>
         <div class="res-title">${r.title}</div>
         ${r.note ? `<div class="res-note">${r.note}</div>` : ''}
-        ${r.link ? `<a class="res-link" href="#" onclick="return false;">${r.link} ↗</a>` : `<span class="res-link disabled">No link attached</span>`}
+        ${r.link ? renderResLink(r.link) : ''}
       </div>`).join('') : '<div class="empty-note">Nothing saved in this category yet.</div>';
     document.querySelectorAll('#resGrid .del-btn').forEach(b=> b.addEventListener('click', async ()=>{
       const subj = b.dataset.subject;
@@ -1796,7 +1805,7 @@
         <span class="mono" style="font-size:9px;text-transform:uppercase;color:#fff;background:${resColor(r.type)};padding:3px 8px;border-radius:10px;display:inline-block;margin-bottom:8px;">${r.type}</span>
         ${r.subject!=='Overall' ? `<div class="subj-tag" style="color:${subjColor(r.subject)};margin-bottom:5px;"><span class="dot" style="background:${subjColor(r.subject)}"></span>${r.subject}</div>` : ''}
         <div class="row-title">${r.title}</div>
-        ${r.link ? `<div class="mono" style="font-size:10px;color:var(--ink-soft);margin-top:6px;word-break:break-all;">${r.link}</div>` : ''}
+        ${r.link ? renderResLink(r.link) : ''}
       </div>`).join('') : '<div class="empty-note">Nothing saved yet.</div>';
   }
 
