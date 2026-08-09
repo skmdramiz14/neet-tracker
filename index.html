@@ -186,6 +186,15 @@
   .note-form input, .note-form textarea, .note-form select{ font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:8px 10px; background:#fff; color:var(--ink); resize:vertical; }
   .note-form textarea{ min-height:52px; }
   .note-form-row{ display:flex; gap:8px; }
+  .sched-form-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .sched-form-row select, .sched-form-row input{ height:36px; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:0 10px; background:#fff; color:var(--ink); box-sizing:border-box; }
+  .sched-form-row #schedSubject{ flex:1 1 130px; min-width:110px; }
+  .sched-form-row #schedType{ flex:1 1 100px; min-width:90px; }
+  .sched-form-row #schedTypeCustom{ flex:1 1 140px; min-width:120px; }
+  .sched-form-row #schedTime, .sched-form-row #schedTimeEnd{ flex:0 1 100px; min-width:90px; }
+  .sched-form-row #schedDate{ flex:0 1 130px; min-width:120px; }
+  .sched-form-row #schedAddBtn{ flex:0 0 auto; }
+  @media (max-width:480px){ .sched-form-row select, .sched-form-row input{ flex:1 1 100%; } }
   .note-form-row input:first-child{ flex:1; }
   .note-form-row select{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); padding:0 8px; }
   .note-add-btn{ align-self:flex-start; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; background:var(--ink); color:#fff; border:none; padding:8px 14px; border-radius:3px; cursor:pointer; }
@@ -534,16 +543,16 @@
         <div>
           <div class="panel" id="scheduleSection"><div class="panel-head"><h2>Today's schedule</h2><span style="display:flex;align-items:center;gap:10px;"><button id="printTodayBtn" class="mono" style="background:var(--ink);border:1px solid var(--ink);border-radius:20px;padding:6px 13px;font-size:9.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:#fff;">🖨 Print</button><span class="count mono" id="scheduleCount"></span></span></div>
             <div class="panel-body">
-              <div class="note-form-row" style="margin-bottom:12px;">
-                <input type="text" id="schedTitle" placeholder="Add a task (e.g. Ch.12 — Human Reproduction)…">
+              <input type="text" id="schedTitle" placeholder="Add a task (e.g. Ch.12 — Human Reproduction)…" style="width:100%; margin-bottom:8px; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:8px 10px; height:36px; box-sizing:border-box;">
+              <div class="sched-form-row">
                 <select id="schedSubject">
                   <option>Physics</option><option>Physical Chemistry</option><option>Inorganic Chemistry</option><option>Organic Chemistry</option><option>Botany</option><option>Zoology</option><option>All</option><option>Test</option>
                 </select>
                 <select id="schedType"><option value="lecture">Lecture</option><option value="revision">Revision</option><option value="test">Test</option><option value="custom">Custom…</option></select>
-                <input type="text" id="schedTypeCustom" placeholder="Custom type (e.g. Book, Interview)" style="display:none; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:0 10px;">
-                <input type="time" id="schedTime" title="Start time" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
-                <input type="time" id="schedTimeEnd" title="End time" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
-                <input type="date" id="schedDate" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 8px;">
+                <input type="text" id="schedTypeCustom" placeholder="Custom type (e.g. Book)" style="display:none; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:0 10px; height:36px;">
+                <input type="time" id="schedTime" title="Start time" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 6px;height:36px;">
+                <input type="time" id="schedTimeEnd" title="End time" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 6px;height:36px;">
+                <input type="date" id="schedDate" style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 6px;height:36px;">
                 <button class="note-add-btn" id="schedAddBtn">+ Add</button>
               </div>
               <div class="mono" style="font-size:9.5px;color:var(--pencil);margin:-6px 0 12px;">Start + end time optional (defaults to today, no time). Add both to see exactly how long each task should take.</div>
