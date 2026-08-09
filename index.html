@@ -292,7 +292,8 @@
   .res-type-badge{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:3px 8px; border-radius:10px; color:#fff; margin-bottom:9px; }
   .res-title{ font-size:14px; font-weight:600; margin-bottom:4px; }
   .res-note{ font-size:12px; color:var(--ink-soft); line-height:1.5; margin-bottom:8px; }
-  .res-link{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink); text-decoration:underline; }
+  .res-link{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink); text-decoration:none; display:inline-block; margin-top:6px; padding:5px 10px; background:var(--parchment-deep); border-radius:14px; letter-spacing:0.02em; }
+  .res-link:hover{ background:var(--gold); color:#fff; }
   .res-link.disabled{ color:var(--pencil); text-decoration:none; cursor:default; }
 
   .journal-nav-btn{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; background:var(--green); color:#fff; border:none; padding:9px 15px; border-radius:3px; cursor:pointer; }
@@ -1031,7 +1032,9 @@
     const looksLikeUrl = /^https?:\/\//i.test(link) || /^www\./i.test(link) || /\.[a-z]{2,}(\/|$)/i.test(link.split(' ')[0]||'');
     if(looksLikeUrl){
       const href = /^https?:\/\//i.test(link) ? link : `https://${link}`;
-      return `<a class="res-link" href="${href}" target="_blank" rel="noopener noreferrer">${link} ↗</a>`;
+      const isUploadedFile = href.includes('firebasestorage.googleapis.com');
+      const label = isUploadedFile ? '📎 Open uploaded file ↗' : (link.length > 40 ? '🔗 Open link ↗' : `${link} ↗`);
+      return `<a class="res-link" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
     }
     return `<div class="res-note" style="margin-top:4px;">${link}</div>`;
   }
