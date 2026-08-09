@@ -271,6 +271,24 @@
   .res-form select{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); }
   .res-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
   .res-card{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:14px 15px; }
+
+  /* ---------- SYLLABUS MAP ---------- */
+  .syl-card{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:13px 15px; margin-bottom:10px; }
+  .syl-card-head{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .syl-chapter{ font-family:'Fraunces',serif; font-weight:600; font-size:14.5px; }
+  .syl-topic{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .syl-meta-row{ display:flex; gap:14px; margin-top:9px; flex-wrap:wrap; }
+  .syl-meta-item{ font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); text-transform:uppercase; }
+  .syl-meta-item b{ display:block; font-family:'Fraunces',serif; font-size:14px; color:var(--ink); font-weight:600; }
+  .syl-diff-dots{ display:flex; gap:2px; margin-top:2px; }
+  .syl-diff-dots span{ width:6px; height:6px; border-radius:50%; background:var(--line); }
+  .syl-diff-dots span.filled{ background:var(--rust); }
+  .syl-cat-tags{ display:flex; gap:5px; flex-wrap:wrap; margin-top:9px; }
+  .syl-cat-tag{ font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.04em; text-transform:uppercase; padding:3px 8px; border-radius:10px; background:var(--parchment-deep); color:var(--ink-soft); }
+  .syl-form-pill{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; padding:6px 11px; border-radius:16px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; }
+  .syl-form-pill.selected{ background:var(--green); color:#fff; border-color:var(--green); }
+  .field{ font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:8px 10px; background:#fff; color:var(--ink); height:36px; box-sizing:border-box; }
+  .row-flex{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .res-type-badge{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:3px 8px; border-radius:10px; color:#fff; margin-bottom:9px; }
   .res-title{ font-size:14px; font-weight:600; margin-bottom:4px; }
   .res-note{ font-size:12px; color:var(--ink-soft); line-height:1.5; margin-bottom:8px; }
@@ -334,6 +352,7 @@
   /* ---------- JOURNAL VIEW ---------- */
   #journalView{ display:none; }
   #routineView{ display:none; }
+  #overallDetailView{ display:none; }
   .journal-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:8px; }
   .mood-row{ display:flex; gap:10px; margin:6px 0 16px; }
   .mood-btn{ width:44px; height:44px; border-radius:50%; border:1.5px solid var(--line); background:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s ease; }
@@ -670,6 +689,58 @@
       </div>
       <div class="res-grid" id="resGrid"></div>
 
+      <div class="section-head"><h2>Syllabus map</h2><span id="sylCount"></span></div>
+      <div class="card">
+        <div class="row-flex" style="margin-bottom:8px;">
+          <input type="text" id="sylChapter" class="field" placeholder="Chapter name" style="flex:1 1 160px;">
+          <input type="text" id="sylTopic" class="field" placeholder="Topic (optional, within chapter)" style="flex:1 1 160px;">
+        </div>
+        <div class="row-flex" style="margin-bottom:8px;">
+          <input type="number" id="sylWeightage" class="field" placeholder="Weightage (marks or %)" style="width:170px;">
+          <input type="number" id="sylPyq" class="field" placeholder="PYQ count" style="width:110px;">
+          <select id="sylDifficulty" class="field">
+            <option value="1">Difficulty: Very Easy</option>
+            <option value="2">Difficulty: Easy</option>
+            <option value="3" selected>Difficulty: Medium</option>
+            <option value="4">Difficulty: Hard</option>
+            <option value="5">Difficulty: Very Hard</option>
+          </select>
+        </div>
+        <div class="mono" style="font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--pencil);margin-bottom:6px;">Categories (click to toggle)</div>
+        <div class="row-flex" id="sylCatPicker" style="margin-bottom:10px;"></div>
+        <button class="note-add-btn" id="sylAddBtn">+ Add to syllabus map</button>
+      </div>
+      <div class="row-flex" id="sylFilterTabs" style="margin-bottom:14px;"></div>
+      <div id="sylList"></div>
+
+    </div>
+    <div style="height:60px"></div>
+  </div>
+
+  <!-- ================= OVERALL DETAIL VIEW ================= -->
+  <div id="overallDetailView">
+    <div class="wrap">
+      <button class="back-btn" id="overallBackBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Back to dashboard</button>
+      <div class="subj-detail-head"><span class="subj-detail-chip" style="background:var(--ink);"></span><h1>Overall — All Subjects</h1></div>
+      <div class="subj-detail-group">COMBINED ACROSS EVERY SUBJECT</div>
+
+      <div class="detail-stat-row" id="overallDetailStatRow"></div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <div class="mono" style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--pencil);margin-bottom:8px;">Overall exam reflection</div>
+        <textarea id="overallDetailNotes" placeholder="General thoughts on overall exam readiness, strategy, things cutting across subjects…" style="width:100%; min-height:80px; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:9px 11px; box-sizing:border-box;"></textarea>
+        <button class="note-add-btn" id="overallDetailNotesSaveBtn" style="margin-top:8px;">Save reflection</button>
+        <div id="overallDetailNotesSaved" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+      </div>
+
+      <div class="detail-two-col">
+        <div class="panel"><div class="panel-head"><h2>All lectures & revision</h2><span class="count mono" id="overallLecCount"></span></div><div class="panel-body" id="overallLecList"></div></div>
+        <div class="panel"><div class="panel-head"><h2>All tests</h2><span class="count mono" id="overallTestCount"></span></div><div class="panel-body" id="overallTestList"></div></div>
+      </div>
+      <div class="detail-two-col">
+        <div class="panel"><div class="panel-head"><h2>All notes</h2><span class="count mono" id="overallNoteCount"></span></div><div class="panel-body" id="overallNoteList"></div></div>
+        <div class="panel"><div class="panel-head"><h2>All backlog</h2><span class="count mono" id="overallBacklogCount"></span></div><div class="panel-body" id="overallBacklogList"></div></div>
+      </div>
     </div>
     <div style="height:60px"></div>
   </div>
@@ -977,6 +1048,9 @@
   let routineBlocks = [];
   let overallData = { pct: 0, reflection: '' };
   let overallDataDocId = null;
+  let syllabusItems = [];
+  let activeSylTab = 'All';
+  let sylSelectedCats = [];
   let activeRoutineDay = null; // set after DOW_NAMES known
 
   const todayStrFn = () => new Date().toISOString().slice(0,10);
@@ -995,7 +1069,7 @@
     const uid = currentUser.uid;
     const todayIso = todayStrFn();
 
-    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap, qrSnap, routineSnap, overallSnap] = await Promise.all([
+    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap, qrSnap, routineSnap, overallSnap, sylSnap] = await Promise.all([
       getDocs(query(collection(db,'scheduleItems'), where('userId','==',uid))),
       getDocs(query(collection(db,'notes'), where('userId','==',uid))),
       getDocs(query(collection(db,'tests'), where('userId','==',uid))),
@@ -1010,6 +1084,7 @@
       getDocs(query(collection(db,'quickRecall'), where('userId','==',uid))),
       getDocs(query(collection(db,'routineBlocks'), where('userId','==',uid))),
       getDocs(query(collection(db,'overallData'), where('userId','==',uid))),
+      getDocs(query(collection(db,'syllabusItems'), where('userId','==',uid))),
     ]);
 
     const allScheduleDocs = schedSnap.docs.map(d=>({ id:d.id, ...d.data() }));
@@ -1047,6 +1122,7 @@
       overallDataDocId = doc0.id;
       overallData = { pct: doc0.data().pct||0, reflection: doc0.data().reflection||'' };
     }
+    syllabusItems = sylSnap.docs.map(d=>({ id:d.id, ...d.data() }));
 
     progSnap.docs.forEach(d=>{ const p=d.data(); if(subjectProgress[p.subject]) subjectProgress[p.subject].pct = p.pct||0; });
     SUBJECTS.forEach(s=>{
@@ -1129,7 +1205,27 @@
   });
 
   function renderSubjectGrid(){
-    document.getElementById('subjectGrid').innerHTML = SUBJECTS.map(s=>{
+    const totalLectures = SUBJECTS.reduce((a,s)=> a + (subjectProgress[s.name]?.lecturesDone||0), 0);
+    const totalNotes = notes.length;
+    const totalBacklog = backlog.length;
+    const overallAvgTest = tests.length ? Math.round(tests.reduce((a,t)=>a+(t.score/t.max*100),0)/tests.length) : null;
+
+    const overallCard = `
+      <button class="subj-card" id="overallCardBtn" style="border:1.5px solid var(--ink);">
+        <span class="subj-open">OPEN →</span>
+        <span class="subj-chip" style="background:var(--ink);"></span><span class="subj-name">Overall</span>
+        <div class="subj-group">All Subjects Combined</div>
+        <div class="subj-bar-track"><div class="subj-bar-fill" style="width:${overallData.pct}%; background:var(--ink);"></div></div>
+        <div class="subj-meta-row">
+          <div><b>${overallData.pct}%</b>syllabus</div>
+          <div><b>${totalLectures}</b>lectures</div>
+          <div><b>${totalNotes}</b>notes</div>
+          <div><b class="${totalBacklog>0?'warn-n':''}">${totalBacklog}</b>backlog</div>
+          <div><b>${overallAvgTest!==null?overallAvgTest+'%':'—'}</b>avg test</div>
+        </div>
+      </button>`;
+
+    document.getElementById('subjectGrid').innerHTML = overallCard + SUBJECTS.map(s=>{
       const prog = subjectProgress[s.name];
       const notesN = notes.filter(n=>n.subject===s.name).length;
       const backlogNForSubj = backlog.filter(b=>b.subject===s.name).length;
@@ -1148,7 +1244,8 @@
         </div>
       </button>`;
     }).join('');
-    document.querySelectorAll('.subj-card').forEach(el=> el.addEventListener('click', ()=>openSubject(el.dataset.subject)));
+    document.getElementById('overallCardBtn').addEventListener('click', openOverallDetail);
+    document.querySelectorAll('.subj-card[data-subject]').forEach(el=> el.addEventListener('click', ()=>openSubject(el.dataset.subject)));
   }
 
   /* ============ SCHEDULE (home) ============ */
@@ -1353,9 +1450,11 @@
   function openSubject(name){
     currentSubject = name;
     activeResTab = 'All';
+    activeSylTab = 'All';
     document.getElementById('homeView').style.display = 'none';
     document.getElementById('journalView').style.display = 'none';
     document.getElementById('routineView').style.display = 'none';
+    document.getElementById('overallDetailView').style.display = 'none';
     document.getElementById('subjectView').style.display = 'block';
     window.scrollTo(0,0);
     renderSubjectDetail(name);
@@ -1433,6 +1532,7 @@
     document.querySelectorAll('#detailBacklogList .backlog-btn').forEach(btn=> btn.addEventListener('click', ()=>{ moveToToday(btn.dataset.id); }));
 
     renderResources(name);
+    renderSyllabusMap(name);
   }
 
   async function updateSubjectProgress(subject, pct){
@@ -1474,6 +1574,82 @@
       try{ await deleteDoc(doc(db,'resources',b.dataset.id)); }catch(e){}
     }));
   }
+
+  /* ============ SYLLABUS MAP ============ */
+  const SYL_CATEGORIES = ['High Weightage','Needs Conceptual Clarity','Needs Memorization','NEET Frequent','Needs More Practice'];
+  const DIFF_LABELS = { 1:'Very Easy', 2:'Easy', 3:'Medium', 4:'Hard', 5:'Very Hard' };
+
+  function renderSylCatPicker(){
+    document.getElementById('sylCatPicker').innerHTML = SYL_CATEGORIES.map(c=>
+      `<button type="button" class="syl-form-pill ${sylSelectedCats.includes(c)?'selected':''}" data-cat="${c}">${c}</button>`
+    ).join('');
+    document.querySelectorAll('#sylCatPicker .syl-form-pill').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const cat = b.dataset.cat;
+        if(sylSelectedCats.includes(cat)) sylSelectedCats = sylSelectedCats.filter(c=>c!==cat);
+        else sylSelectedCats.push(cat);
+        renderSylCatPicker();
+      });
+    });
+  }
+  renderSylCatPicker();
+
+  function renderSyllabusMap(subject){
+    const items = syllabusItems.filter(s=>s.subject===subject);
+    document.getElementById('sylCount').textContent = items.length + ' CHAPTERS/TOPICS';
+
+    document.getElementById('sylFilterTabs').innerHTML = ['All', ...SYL_CATEGORIES].map(c=>{
+      const n = c==='All' ? items.length : items.filter(i=>(i.categories||[]).includes(c)).length;
+      return `<button class="pill ${activeSylTab===c?'active':''}" data-tab="${c}">${c} (${n})</button>`;
+    }).join('');
+    document.querySelectorAll('#sylFilterTabs .pill').forEach(b=> b.addEventListener('click', ()=>{ activeSylTab=b.dataset.tab; renderSyllabusMap(subject); }));
+
+    const shown = activeSylTab==='All' ? items : items.filter(i=>(i.categories||[]).includes(activeSylTab));
+    document.getElementById('sylList').innerHTML = shown.length ? shown.map(s=>`
+      <div class="syl-card">
+        <div class="syl-card-head">
+          <div>
+            <div class="syl-chapter">${s.chapter}</div>
+            ${s.topic ? `<div class="syl-topic">${s.topic}</div>` : ''}
+          </div>
+          <button class="del-btn" data-id="${s.id}" aria-label="Delete">✕</button>
+        </div>
+        <div class="syl-meta-row">
+          ${s.weightage ? `<div class="syl-meta-item">Weightage<b>${s.weightage}</b></div>` : ''}
+          ${s.pyq ? `<div class="syl-meta-item">PYQ Count<b>${s.pyq}</b></div>` : ''}
+          <div class="syl-meta-item">Difficulty
+            <div class="syl-diff-dots">${[1,2,3,4,5].map(n=>`<span class="${n<=(s.difficulty||3)?'filled':''}"></span>`).join('')}</div>
+          </div>
+        </div>
+        ${(s.categories&&s.categories.length) ? `<div class="syl-cat-tags">${s.categories.map(c=>`<span class="syl-cat-tag">${c}</span>`).join('')}</div>` : ''}
+      </div>`).join('') : '<div class="empty-note">No chapters mapped yet for this category.</div>';
+
+    document.querySelectorAll('#sylList .del-btn').forEach(b=> b.addEventListener('click', ()=>{
+      syllabusItems = syllabusItems.filter(s=>s.id!==b.dataset.id);
+      renderSyllabusMap(subject);
+      deleteDoc(doc(db,'syllabusItems',b.dataset.id)).catch(()=>{});
+    }));
+  }
+
+  document.getElementById('sylAddBtn').addEventListener('click', async ()=>{
+    const chapter = document.getElementById('sylChapter').value.trim();
+    if(!chapter || !currentUser || !currentSubject) return;
+    const topic = document.getElementById('sylTopic').value.trim();
+    const weightage = document.getElementById('sylWeightage').value.trim();
+    const pyq = document.getElementById('sylPyq').value.trim();
+    const difficulty = parseInt(document.getElementById('sylDifficulty').value);
+    const data = { userId: currentUser.uid, subject: currentSubject, chapter, topic, weightage, pyq, difficulty, categories: [...sylSelectedCats], createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'syllabusItems'), data);
+    syllabusItems.push({ id: ref.id, ...data });
+    document.getElementById('sylChapter').value = '';
+    document.getElementById('sylTopic').value = '';
+    document.getElementById('sylWeightage').value = '';
+    document.getElementById('sylPyq').value = '';
+    document.getElementById('sylDifficulty').value = '3';
+    sylSelectedCats = [];
+    renderSylCatPicker();
+    renderSyllabusMap(currentSubject);
+  });
 
   document.getElementById('resAddBtn').addEventListener('click', async ()=>{
     const title = document.getElementById('resTitle').value.trim();
@@ -1533,6 +1709,7 @@
     document.getElementById('homeView').style.display = 'none';
     document.getElementById('subjectView').style.display = 'none';
     document.getElementById('routineView').style.display = 'none';
+    document.getElementById('overallDetailView').style.display = 'none';
     document.getElementById('journalView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
@@ -1550,6 +1727,7 @@
     document.getElementById('homeView').style.display = 'none';
     document.getElementById('subjectView').style.display = 'none';
     document.getElementById('journalView').style.display = 'none';
+    document.getElementById('overallDetailView').style.display = 'none';
     document.getElementById('routineView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
@@ -1564,10 +1742,77 @@
   document.getElementById('routineBackBtn').addEventListener('click', closeRoutine);
   document.getElementById('footRoutineBtn').addEventListener('click', openRoutine);
 
+  function openOverallDetail(){
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('subjectView').style.display = 'none';
+    document.getElementById('journalView').style.display = 'none';
+    document.getElementById('routineView').style.display = 'none';
+    document.getElementById('overallDetailView').style.display = 'block';
+    currentSubject = null;
+    window.scrollTo(0,0);
+    renderOverallDetail();
+  }
+  function closeOverallDetail(){
+    document.getElementById('overallDetailView').style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+    window.scrollTo(0,0);
+  }
+  document.getElementById('overallBackBtn').addEventListener('click', closeOverallDetail);
+
+  function renderOverallDetail(){
+    const totalLectures = SUBJECTS.reduce((a,s)=> a + (subjectProgress[s.name]?.lecturesDone||0), 0);
+    const totalNotes = notes.length;
+    const totalBacklog = backlog.length;
+    const totalTests = tests.length;
+    const overallAvgTest = tests.length ? Math.round(tests.reduce((a,t)=>a+(t.score/t.max*100),0)/tests.length) : null;
+
+    document.getElementById('overallDetailStatRow').innerHTML = [
+      { label:'Syllabus (overall)', val: overallData.pct, unit:'%' },
+      { label:'Total lectures', val: totalLectures, unit:'all subjects' },
+      { label:'Total notes', val: totalNotes, unit:'entries' },
+      { label:'Total backlog', val: totalBacklog, unit:'open', warn: totalBacklog>0 },
+      { label:'Avg test score', val: overallAvgTest!==null?overallAvgTest:'—', unit: overallAvgTest!==null?'%':'' },
+    ].map(s=>`<div class="stat-card ${s.warn?'rust':''}"><div class="stat-label">${s.label}</div><div class="stat-val">${s.val} <span>${s.unit}</span></div></div>`).join('');
+
+    document.getElementById('overallDetailNotes').value = overallData.reflection || '';
+
+    const allLec = schedule.filter(s=>s.type==='lecture'||s.type==='revision');
+    document.getElementById('overallLecCount').textContent = allLec.length + ' TODAY';
+    document.getElementById('overallLecList').innerHTML = allLec.length ? allLec.map(s=>`
+      <div class="task-row"><div class="task-check ${s.done?'done':''}" style="cursor:default;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <div class="task-main"><div class="task-title ${s.done?'done':''}">${s.title}</div><div class="subj-tag"><span class="dot" style="background:${subjColor(s.subject)}"></span>${s.subject}</div></div><div class="task-time mono">${timeRangeLabel(s)}</div></div>`).join('')
+      : '<div class="empty-note">Nothing scheduled today.</div>';
+
+    document.getElementById('overallTestCount').textContent = tests.length + ' TAKEN';
+    document.getElementById('overallTestList').innerHTML = tests.length ? tests.slice(0,20).map(t=>`
+      <div class="test-row"><div><div class="test-name">${t.name}</div><div class="test-date">${t.date} · ${t.subject}</div></div><div class="test-score">${t.score}<span>/${t.max}</span></div></div>`).join('')
+      : '<div class="empty-note">No tests logged yet.</div>';
+
+    document.getElementById('overallNoteCount').textContent = notes.length + ' SAVED';
+    document.getElementById('overallNoteList').innerHTML = notes.length ? notes.slice(0,20).map(n=>`
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span class="note-item-tag" style="color:${subjColor(n.subject)}">${n.subject}</span></div><div class="note-item-body">${n.body}</div></div>`).join('')
+      : '<div class="empty-note">No notes yet.</div>';
+
+    document.getElementById('overallBacklogCount').textContent = backlog.length + ' OPEN';
+    document.getElementById('overallBacklogList').innerHTML = backlog.length ? backlog.map(b=>`
+      <div class="backlog-row"><span class="backlog-age">${b.daysOld}d old</span><div class="backlog-main"><div class="backlog-title">${b.title}</div><div class="subj-tag">${b.subject}</div></div></div>`).join('')
+      : '<div class="empty-note">Backlog clear.</div>';
+  }
+
+  document.getElementById('overallDetailNotesSaveBtn').addEventListener('click', async ()=>{
+    overallData.reflection = document.getElementById('overallDetailNotes').value.trim();
+    await saveOverallData();
+    document.getElementById('overallNotes').value = overallData.reflection;
+    const savedEl = document.getElementById('overallDetailNotesSaved');
+    savedEl.textContent = 'Saved just now.';
+    setTimeout(()=>{ savedEl.textContent = ''; }, 3000);
+  });
+
   function goHome(){
     document.getElementById('journalView').style.display = 'none';
     document.getElementById('subjectView').style.display = 'none';
     document.getElementById('routineView').style.display = 'none';
+    document.getElementById('overallDetailView').style.display = 'none';
     document.getElementById('homeView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
