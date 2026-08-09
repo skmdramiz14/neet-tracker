@@ -683,8 +683,10 @@
           <select id="resType">
             <option>PDF</option><option>Book</option><option>Test Paper</option><option>Notes</option><option>Lecture</option><option>Other</option>
           </select>
-          <input type="text" id="resLink" placeholder="Link, file location, or a short note (optional)">
+          <input type="text" id="resLink" placeholder="Link or note (optional if uploading a file)">
         </div>
+        <input type="file" id="resFile" accept=".pdf,video/*,audio/*,image/*" style="font-family:'JetBrains Mono',monospace;font-size:11px;margin:8px 0;">
+        <div class="mono" style="font-size:9px;color:var(--pencil);margin-bottom:8px;">Upload a PDF, video, audio, or image file — or just fill the link/note field above, either works.</div>
         <button class="note-add-btn" id="resAddBtn">+ Add resource</button>
       </div>
       <div class="res-grid" id="resGrid"></div>
@@ -753,6 +755,7 @@
           <input type="text" id="overallResLink" class="field" placeholder="Link or note (optional)" style="flex:1 1 200px;">
           <button class="note-add-btn" id="overallResAddBtn">+ Add</button>
         </div>
+        <input type="file" id="overallResFile" accept=".pdf,video/*,audio/*,image/*" style="font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:8px;">
       </div>
       <div class="subject-grid" id="overallResGrid"></div>
 
@@ -1683,13 +1686,25 @@
   document.getElementById('resAddBtn').addEventListener('click', async ()=>{
     const title = document.getElementById('resTitle').value.trim();
     const type = document.getElementById('resType').value;
-    const link = document.getElementById('resLink').value.trim();
+    let link = document.getElementById('resLink').value.trim();
+    const file = document.getElementById('resFile').files[0];
     if(!title || !currentSubject) return;
+
+    const btn = document.getElementById('resAddBtn');
+    if(file){
+      btn.textContent = 'Uploading…'; btn.disabled = true;
+      const path = `journal-media/${currentUser.uid}/resources-${Date.now()}-${file.name}`;
+      const sref = storageRef(storage, path);
+      await uploadBytes(sref, file);
+      link = await getDownloadURL(sref);
+      btn.textContent = '+ Add resource'; btn.disabled = false;
+    }
+
     if(!resources[currentSubject]) resources[currentSubject] = [];
     const data = { userId: currentUser.uid, subject: currentSubject, type, title, link, note:'', createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'resources'), data);
     resources[currentSubject].unshift({ id: ref.id, type, title, link, note:'' });
-    document.getElementById('resTitle').value=''; document.getElementById('resLink').value='';
+    document.getElementById('resTitle').value=''; document.getElementById('resLink').value=''; document.getElementById('resFile').value='';
     renderResources(currentSubject);
   });
 
@@ -1813,13 +1828,26 @@
     const title = document.getElementById('overallResTitle').value.trim();
     if(!title || !currentUser) return;
     const type = document.getElementById('overallResType').value;
-    const link = document.getElementById('overallResLink').value.trim();
+    let link = document.getElementById('overallResLink').value.trim();
+    const file = document.getElementById('overallResFile').files[0];
+
+    const btn = document.getElementById('overallResAddBtn');
+    if(file){
+      btn.textContent = 'Uploading…'; btn.disabled = true;
+      const path = `journal-media/${currentUser.uid}/resources-${Date.now()}-${file.name}`;
+      const sref = storageRef(storage, path);
+      await uploadBytes(sref, file);
+      link = await getDownloadURL(sref);
+      btn.textContent = '+ Add'; btn.disabled = false;
+    }
+
     const data = { userId: currentUser.uid, subject:'Overall', type, title, link, note:'', createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'resources'), data);
     if(!resources['Overall']) resources['Overall'] = [];
     resources['Overall'].unshift({ id: ref.id, type, title, link, note:'' });
     document.getElementById('overallResTitle').value = '';
     document.getElementById('overallResLink').value = '';
+    document.getElementById('overallResFile').value = '';
     renderOverallResources();
   });
 
