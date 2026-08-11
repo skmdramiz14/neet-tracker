@@ -6,6 +6,8 @@
 <title>Field Notes — NEET 2027</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
   :root{
     --parchment:#EDE7D9; --parchment-deep:#E3DCCB; --ink:#1C2B39; --ink-soft:#3C4A56;
@@ -288,6 +290,15 @@
   .syl-form-pill{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; padding:6px 11px; border-radius:16px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; }
   .syl-form-pill.selected{ background:var(--green); color:#fff; border-color:var(--green); }
   .field{ font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:8px 10px; background:#fff; color:var(--ink); height:36px; box-sizing:border-box; }
+
+  /* ---------- NOTE BLOCK COMPOSER ---------- */
+  .note-block{ position:relative; margin-bottom:10px; padding-right:26px; }
+  .note-block-text{ font-size:14px; line-height:1.6; white-space:pre-wrap; }
+  .note-block img{ max-width:100%; border-radius:5px; border:1px solid var(--line); }
+  .note-block-eq{ padding:10px; background:var(--card); border-radius:4px; overflow-x:auto; }
+  .note-block-remove{ position:absolute; top:0; right:0; background:none; border:none; color:var(--pencil); cursor:pointer; font-size:14px; }
+  .note-block-remove:hover{ color:var(--rust); }
+  .block-editor-box{ background:var(--card); border:1px solid var(--line); border-radius:5px; padding:12px; margin-bottom:10px; }
   .row-flex{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .res-type-badge{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:3px 8px; border-radius:10px; color:#fff; margin-bottom:9px; }
   .res-title{ font-size:14px; font-weight:600; margin-bottom:4px; }
@@ -618,46 +629,6 @@
             </div>
             <div class="panel-body"><div class="cal-grid" id="calGrid"></div><div class="cal-agenda" id="calAgenda"></div></div>
           </div>
-          <div class="panel" id="notesSection">
-            <div class="panel-head"><h2>Notes</h2><span class="count mono" id="notesCount"></span></div>
-            <div class="panel-body">
-              <div class="row-flex" id="noteModeTabs" style="margin:8px 0 12px;"></div>
-
-              <!-- WRITE TAB -->
-              <div id="noteTabWrite">
-                <div class="note-form">
-                  <div class="note-form-row"><input type="text" id="noteTitle" placeholder="Note title…"><select id="noteSubject"></select></div>
-                  <textarea id="noteBody" placeholder="Write the note…"></textarea>
-                  <div class="row-flex" style="gap:8px;">
-                    <button class="note-add-btn" id="noteAddBtn">+ Add note</button>
-                    <button class="note-add-btn" id="noteGenImgBtn" style="background:var(--gold);">🎨 Generate illustration</button>
-                  </div>
-                  <div id="noteImgStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
-                  <img id="noteImgPreview" style="display:none;max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">
-                </div>
-              </div>
-
-              <!-- SUMMARIZE TAB -->
-              <div id="noteTabSummarize" style="display:none;">
-                <textarea id="longNoteInput" placeholder="Paste a long note here — get a crisp quick-revision summary…" style="width:100%;min-height:100px;font-family:'Lora',serif;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:9px 11px;box-sizing:border-box;margin-bottom:8px;"></textarea>
-                <select id="longNoteSubject" style="margin-bottom:8px;"></select>
-                <button class="note-add-btn" id="summarizeNoteBtn">✨ Summarize & save</button>
-                <div id="summarizeStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
-              </div>
-
-              <!-- ORGANIZE TAB -->
-              <div id="noteTabOrganize" style="display:none;">
-                <textarea id="messyNoteInput" placeholder="Paste messy notes here (optional if uploading a screenshot)…" style="width:100%;min-height:70px;font-family:'Lora',serif;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:9px 11px;box-sizing:border-box;margin-bottom:8px;"></textarea>
-                <input type="file" id="messyImageInput" accept="image/*" style="font-family:'JetBrains Mono',monospace;font-size:11px;margin-bottom:8px;">
-                <div class="mono" style="font-size:9.5px;color:var(--pencil);margin-bottom:8px;">Upload a lecture screenshot or messy handwriting photo, and/or paste messy text above.</div>
-                <select id="messyNoteSubject" style="margin-bottom:8px;"></select>
-                <button class="note-add-btn" id="organizeNoteBtn">🧹 Organize & save</button>
-                <div id="organizeStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
-              </div>
-
-              <div id="notesList"></div>
-            </div>
-          </div>
 
           <div class="panel" id="quickRecallSection">
             <div class="panel-head"><h2>Quick recall</h2><span class="count mono" id="qrCount"></span></div>
@@ -678,6 +649,54 @@
               <div id="qrList"></div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="section-head"><h2>Notes</h2><span class="count mono" id="notesCount"></span></div>
+      <div class="panel">
+        <div class="panel-body">
+          <div class="row-flex" id="noteModeTabs" style="margin:8px 0 12px;"></div>
+
+          <!-- WRITE TAB -->
+          <div id="noteTabWrite">
+            <div class="note-form-row"><input type="text" id="noteTitle" placeholder="Note title…"><select id="noteSubject"></select></div>
+
+            <div class="mono" style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--pencil);margin:12px 0 6px;">Note content (build block by block)</div>
+            <div id="noteBlocksPreview" style="border:1px dashed var(--line); border-radius:5px; padding:12px; min-height:50px; margin-bottom:10px;"></div>
+
+            <div class="row-flex" style="gap:8px; margin-bottom:10px;">
+              <button class="pill" id="addTextBlockBtn" type="button">+ Text</button>
+              <button class="pill" id="addImageBlockBtn" type="button">+ Image</button>
+              <button class="pill" id="addEquationBlockBtn" type="button">+ Equation</button>
+            </div>
+
+            <div id="blockEditorArea"></div>
+
+            <button class="note-add-btn" id="noteAddBtn" style="margin-top:12px;">+ Save note</button>
+            <div id="noteImgStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+          </div>
+
+          <!-- SUMMARIZE TAB -->
+          <div id="noteTabSummarize" style="display:none;">
+            <textarea id="longNoteInput" placeholder="Paste a long note here — get a crisp quick-revision summary…" style="width:100%;min-height:100px;font-family:'Lora',serif;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:9px 11px;box-sizing:border-box;margin-bottom:8px;"></textarea>
+            <select id="longNoteSubject" style="margin-bottom:8px;"></select>
+            <button class="note-add-btn" id="summarizeNoteBtn">✨ Summarize & save</button>
+            <div id="summarizeStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+          </div>
+
+          <!-- ORGANIZE TAB -->
+          <div id="noteTabOrganize" style="display:none;">
+            <textarea id="messyNoteInput" placeholder="Paste messy notes here (optional if uploading a screenshot)…" style="width:100%;min-height:70px;font-family:'Lora',serif;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:9px 11px;box-sizing:border-box;margin-bottom:8px;"></textarea>
+            <input type="file" id="messyImageInput" accept="image/*" style="font-family:'JetBrains Mono',monospace;font-size:11px;margin-bottom:8px;">
+            <div class="mono" style="font-size:9.5px;color:var(--pencil);margin-bottom:8px;">Upload a lecture screenshot or messy handwriting photo, and/or paste messy text above.</div>
+            <select id="messyNoteSubject" style="margin-bottom:8px;"></select>
+            <button class="note-add-btn" id="organizeNoteBtn">🧹 Organize & save</button>
+            <div id="organizeStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+          </div>
+
+          <div id="notesList" style="margin-top:14px;"></div>
         </div>
       </div>
     </div>
@@ -1227,28 +1246,131 @@
   }
   renderNoteModeTabs();
 
-  let pendingNoteImageUrl = null;
-  document.getElementById('noteGenImgBtn').addEventListener('click', async ()=>{
-    const title = document.getElementById('noteTitle').value.trim();
-    const body = document.getElementById('noteBody').value.trim();
-    const prompt = title || body;
-    if(!prompt){ alert('Write a title or note first — that becomes the image prompt.'); return; }
-    const btn = document.getElementById('noteGenImgBtn');
-    const statusEl = document.getElementById('noteImgStatus');
-    btn.disabled = true; statusEl.textContent = 'Generating illustration… (can take 10-20s)';
-    try{
-      const res = await fetch('/api/generate-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt }) });
-      const data = await res.json();
-      if(data.error){ statusEl.textContent = data.error; btn.disabled=false; return; }
-      pendingNoteImageUrl = data.imageUrl;
-      const img = document.getElementById('noteImgPreview');
-      img.src = data.imageUrl; img.style.display = 'block';
-      statusEl.textContent = 'Illustration ready — will be attached when you click "+ Add note".';
-    }catch(err){
-      statusEl.textContent = 'Image generation failed — check /api/generate-image is deployed with OPENAI_API_KEY set.';
+  /* ---- Note block composer (Write tab) ---- */
+  let noteBlocks = [];
+
+  function renderNoteBlocksPreview(){
+    const box = document.getElementById('noteBlocksPreview');
+    if(noteBlocks.length === 0){
+      box.innerHTML = '<div class="empty-note">No blocks yet — use the buttons below to add text, an image, or an equation.</div>';
+      return;
     }
-    btn.disabled = false;
+    box.innerHTML = noteBlocks.map((b,i)=>{
+      if(b.type==='text') return `<div class="note-block" data-i="${i}"><div class="note-block-text">${b.content}</div><button class="note-block-remove" data-i="${i}">✕</button></div>`;
+      if(b.type==='image') return `<div class="note-block" data-i="${i}"><img src="${b.url}"><button class="note-block-remove" data-i="${i}">✕</button></div>`;
+      if(b.type==='equation') return `<div class="note-block" data-i="${i}"><div class="note-block-eq" id="eqBlock${i}"></div><button class="note-block-remove" data-i="${i}">✕</button></div>`;
+      return '';
+    }).join('');
+    document.querySelectorAll('.note-block-remove').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ noteBlocks.splice(parseInt(btn.dataset.i),1); renderNoteBlocksPreview(); });
+    });
+    noteBlocks.forEach((b,i)=>{
+      if(b.type==='equation'){
+        const el = document.getElementById(`eqBlock${i}`);
+        if(el && window.katex){
+          try{ katex.render(b.latex, el, { throwOnError:false }); }catch(e){ el.textContent = b.latex; }
+        }
+      }
+    });
+  }
+  renderNoteBlocksPreview();
+
+  function closeBlockEditor(){ document.getElementById('blockEditorArea').innerHTML = ''; }
+
+  document.getElementById('addTextBlockBtn').addEventListener('click', ()=>{
+    document.getElementById('blockEditorArea').innerHTML = `
+      <div class="block-editor-box">
+        <textarea id="newBlockText" placeholder="Write this part of the note…" style="width:100%;min-height:70px;font-family:'Lora',serif;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:9px 11px;box-sizing:border-box;margin-bottom:8px;"></textarea>
+        <button class="note-add-btn" id="confirmTextBlockBtn">Add this text</button>
+      </div>`;
+    document.getElementById('confirmTextBlockBtn').addEventListener('click', ()=>{
+      const val = document.getElementById('newBlockText').value.trim();
+      if(!val) return;
+      noteBlocks.push({ type:'text', content: val });
+      renderNoteBlocksPreview();
+      closeBlockEditor();
+    });
   });
+
+  document.getElementById('addImageBlockBtn').addEventListener('click', ()=>{
+    document.getElementById('blockEditorArea').innerHTML = `
+      <div class="block-editor-box">
+        <input type="text" id="newBlockImgPrompt" class="field" placeholder="Describe the image to generate (e.g. Krebs cycle diagram)" style="width:100%;margin-bottom:8px;">
+        <button class="note-add-btn" id="genBlockImgBtn" style="background:var(--gold);">🎨 Generate with AI</button>
+        <div class="mono" style="font-size:9.5px;color:var(--pencil);margin:10px 0 6px;">— or —</div>
+        <input type="file" id="newBlockImgFile" accept="image/*" style="font-family:'JetBrains Mono',monospace;font-size:11px;">
+        <button class="note-add-btn" id="uploadBlockImgBtn" style="margin-top:8px;">📎 Upload this image</button>
+        <div id="blockImgStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+      </div>`;
+    document.getElementById('genBlockImgBtn').addEventListener('click', async ()=>{
+      const prompt = document.getElementById('newBlockImgPrompt').value.trim();
+      if(!prompt) return;
+      const statusEl = document.getElementById('blockImgStatus');
+      statusEl.textContent = 'Generating… (10-20s)';
+      try{
+        const res = await fetch('/api/generate-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt }) });
+        const data = await res.json();
+        if(data.error){ statusEl.textContent = data.error; return; }
+        noteBlocks.push({ type:'image', url: data.imageUrl });
+        renderNoteBlocksPreview();
+        closeBlockEditor();
+      }catch(err){ statusEl.textContent = 'Generation failed — check /api/generate-image is deployed with OPENAI_API_KEY.'; }
+    });
+    document.getElementById('uploadBlockImgBtn').addEventListener('click', async ()=>{
+      const file = document.getElementById('newBlockImgFile').files[0];
+      if(!file || !currentUser) return;
+      const statusEl = document.getElementById('blockImgStatus');
+      statusEl.textContent = 'Uploading…';
+      try{
+        const path = `journal-media/${currentUser.uid}/note-block-${Date.now()}-${file.name}`;
+        const sref = storageRef(storage, path);
+        await uploadBytes(sref, file);
+        const url = await getDownloadURL(sref);
+        noteBlocks.push({ type:'image', url });
+        renderNoteBlocksPreview();
+        closeBlockEditor();
+      }catch(err){ statusEl.textContent = 'Upload failed: ' + (err.message || 'unknown error'); }
+    });
+  });
+
+  document.getElementById('addEquationBlockBtn').addEventListener('click', ()=>{
+    document.getElementById('blockEditorArea').innerHTML = `
+      <div class="block-editor-box">
+        <input type="text" id="newBlockEqInput" class="field" placeholder="Type LaTeX directly, or describe it in plain words (e.g. 'quadratic formula')" style="width:100%;margin-bottom:8px;">
+        <div class="row-flex" style="gap:8px;">
+          <button class="note-add-btn" id="askAiEqBtn" style="background:var(--gold);">🤖 Ask AI to format</button>
+          <button class="note-add-btn" id="confirmEqBlockBtn">Add as-is</button>
+        </div>
+        <div id="eqPreview" style="margin-top:10px;"></div>
+        <div id="blockEqStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+      </div>`;
+    let currentLatex = '';
+    document.getElementById('askAiEqBtn').addEventListener('click', async ()=>{
+      const description = document.getElementById('newBlockEqInput').value.trim();
+      if(!description) return;
+      const statusEl = document.getElementById('blockEqStatus');
+      statusEl.textContent = 'Formatting…';
+      try{
+        const res = await fetch('/api/format-equation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ description }) });
+        const data = await res.json();
+        if(data.error){ statusEl.textContent = data.error; return; }
+        currentLatex = data.latex;
+        document.getElementById('newBlockEqInput').value = data.latex;
+        const prev = document.getElementById('eqPreview');
+        if(window.katex) katex.render(data.latex, prev, { throwOnError:false });
+        statusEl.textContent = 'Formatted — click "Add as-is" to insert it.';
+      }catch(err){ statusEl.textContent = 'Formatting failed — check /api/format-equation is deployed.'; }
+    });
+    document.getElementById('confirmEqBlockBtn').addEventListener('click', ()=>{
+      const val = document.getElementById('newBlockEqInput').value.trim();
+      if(!val) return;
+      noteBlocks.push({ type:'equation', latex: val });
+      renderNoteBlocksPreview();
+      closeBlockEditor();
+    });
+  });
+
+
 
   document.getElementById('summarizeNoteBtn').addEventListener('click', async ()=>{
     const longText = document.getElementById('longNoteInput').value.trim();
@@ -1570,11 +1692,41 @@
   }
 
   /* ============ NOTES (home) ============ */
+  // Renders a note's content (block-based if note.blocks exists, else falls back to
+  // old-style plain body + optional single imageUrl for notes created before blocks existed).
+  function noteContentHTML(note, eqIdPrefix){
+    if(note.blocks && note.blocks.length){
+      return note.blocks.map((b,i)=>{
+        if(b.type==='text') return `<div class="note-block-text" style="margin-bottom:8px;">${b.content}</div>`;
+        if(b.type==='image') return `<img src="${b.url}" style="max-width:100%;border-radius:5px;margin-bottom:8px;border:1px solid var(--line);">`;
+        if(b.type==='equation') return `<div class="note-block-eq" id="${eqIdPrefix}${i}" style="margin-bottom:8px;"></div>`;
+        return '';
+      }).join('');
+    }
+    return `<div class="note-item-body">${note.body||''}</div>${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">` : ''}`;
+  }
+  function renderNoteEquations(note, eqIdPrefix){
+    if(!note.blocks || !window.katex) return;
+    note.blocks.forEach((b,i)=>{
+      if(b.type==='equation'){
+        const el = document.getElementById(`${eqIdPrefix}${i}`);
+        if(el){ try{ katex.render(b.latex, el, { throwOnError:false }); }catch(e){ el.textContent = b.latex; } }
+      }
+    });
+  }
+
   function printSingleNote(note){
+    const blocksHtml = note.blocks && note.blocks.length
+      ? note.blocks.map(b=>{
+          if(b.type==='text') return `<div style="white-space:pre-wrap; font-size:14px; line-height:1.7; margin-bottom:12px;">${b.content}</div>`;
+          if(b.type==='image') return `<img src="${b.url}" style="max-width:100%;margin-bottom:12px;border-radius:5px;">`;
+          if(b.type==='equation') return `<div style="font-size:16px; margin-bottom:12px; font-family:serif;">${b.latex}</div>`;
+          return '';
+        }).join('')
+      : `<div style="white-space:pre-wrap; font-size:14px; line-height:1.7;">${note.body||''}</div>${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;margin-top:14px;border-radius:5px;">` : ''}`;
     const rows = `<tr><td style="border:none;padding-top:14px;">
-      <div style="font-family: monospace; font-size:10px; text-transform:uppercase; color:#8B8478; margin-bottom:6px;">${note.subject} · ${note.date}</div>
-      <div style="white-space:pre-wrap; font-size:14px; line-height:1.7;">${note.body}</div>
-      ${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;margin-top:14px;border-radius:5px;">` : ''}
+      <div style="font-family: monospace; font-size:10px; text-transform:uppercase; color:#8B8478; margin-bottom:10px;">${note.subject} · ${note.date}</div>
+      ${blocksHtml}
     </td></tr>`;
     const html = `<!DOCTYPE html><html><head><title>${note.title}</title>
       <style>body{font-family:Georgia,serif;padding:40px;color:#1C2B39;} h1{font-size:22px;margin-bottom:4px;} p.meta{font-family:monospace;font-size:11px;color:#8B8478;margin-top:0;} table{width:100%;border-collapse:collapse;} td{border:none;} @media print{body{padding:20px;}}</style>
@@ -1587,9 +1739,10 @@
 
   function renderNotes(){
     document.getElementById('notesCount').textContent = notes.length + ' SAVED';
-    document.getElementById('notesList').innerHTML = notes.map(n=>`
+    document.getElementById('notesList').innerHTML = notes.map((n,idx)=>`
       <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;align-items:center;gap:6px;"><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span><button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>
-      <div class="note-item-body">${n.body}</div>${n.imageUrl ? `<img src="${n.imageUrl}" style="max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">` : ''}<div class="note-item-date">${n.date}</div></div>`).join('');
+      ${noteContentHTML(n, `noteEq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('');
+    notes.forEach((n,idx)=> renderNoteEquations(n, `noteEq${idx}_`));
     document.querySelectorAll('#notesList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, renderNotes)));
     document.querySelectorAll('#notesList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
       const note = notes.find(n=>n.id===b.dataset.id);
@@ -1598,16 +1751,17 @@
   }
   document.getElementById('noteAddBtn').addEventListener('click', async ()=>{
     const title = document.getElementById('noteTitle').value.trim();
-    const body = document.getElementById('noteBody').value.trim();
     const subject = document.getElementById('noteSubject').value;
-    if(!title || !body) return;
-    const data = { userId: currentUser.uid, title, subject, body, date: todayStrFn(), imageUrl: pendingNoteImageUrl || null, createdAt: serverTimestamp() };
+    if(!title || noteBlocks.length===0){ alert('Add a title and at least one block (text/image/equation) before saving.'); return; }
+    // Also store a plain-text "body" fallback (concatenated text blocks) so search/print/older code paths still work.
+    const bodyFallback = noteBlocks.filter(b=>b.type==='text').map(b=>b.content).join(' ') || '(see attached blocks)';
+    const data = { userId: currentUser.uid, title, subject, body: bodyFallback, blocks: noteBlocks, date: todayStrFn(), createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'notes'), data);
     notes.unshift({ id: ref.id, ...data });
-    document.getElementById('noteTitle').value=''; document.getElementById('noteBody').value='';
-    document.getElementById('noteImgPreview').style.display = 'none';
-    document.getElementById('noteImgStatus').textContent = '';
-    pendingNoteImageUrl = null;
+    document.getElementById('noteTitle').value='';
+    noteBlocks = [];
+    renderNoteBlocksPreview();
+    closeBlockEditor();
     renderNotes(); renderSubjectGrid(); renderOverallLedger();
   });
 
@@ -1739,9 +1893,10 @@
     document.querySelectorAll('#detailTestList .del-btn').forEach(b=> b.addEventListener('click', ()=>deleteItem('tests', b.dataset.id, tests, ()=>renderSubjectDetail(name), renderSubjectGrid)));
 
     document.getElementById('detailNoteCount').textContent = subjNotes.length + ' SAVED';
-    document.getElementById('detailNoteList').innerHTML = subjNotes.length ? subjNotes.map(n=>`
-      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;gap:6px;"><button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div><div class="note-item-body">${n.body}</div>${n.imageUrl ? `<img src="${n.imageUrl}" style="max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">` : ''}<div class="note-item-date">${n.date}</div></div>`).join('')
+    document.getElementById('detailNoteList').innerHTML = subjNotes.length ? subjNotes.map((n,idx)=>`
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;gap:6px;"><button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>${noteContentHTML(n, `detailNoteEq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('')
       : '<div class="empty-note">No notes yet for this subject.</div>';
+    subjNotes.forEach((n,idx)=> renderNoteEquations(n, `detailNoteEq${idx}_`));
     document.querySelectorAll('#detailNoteList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, ()=>renderSubjectDetail(name), renderNotes)));
     document.querySelectorAll('#detailNoteList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
       const note = notes.find(n=>n.id===b.dataset.id);
