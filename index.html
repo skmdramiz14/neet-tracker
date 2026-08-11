@@ -561,6 +561,7 @@
           <textarea id="overallNotes" placeholder="General thoughts on overall exam readiness, strategy, things cutting across subjects…" style="width:100%; min-height:70px; font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:9px 11px; box-sizing:border-box;"></textarea>
           <button class="note-add-btn" id="overallNotesSaveBtn" style="margin-top:8px;">Save reflection</button>
           <div id="overallNotesSaved" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+          <div id="overallReflectionsList" style="margin-top:14px;"></div>
         </div>
       </div>
 
@@ -620,11 +621,40 @@
           <div class="panel" id="notesSection">
             <div class="panel-head"><h2>Notes</h2><span class="count mono" id="notesCount"></span></div>
             <div class="panel-body">
-              <div class="note-form">
-                <div class="note-form-row"><input type="text" id="noteTitle" placeholder="Note title…"><select id="noteSubject"></select></div>
-                <textarea id="noteBody" placeholder="Write the note…"></textarea>
-                <button class="note-add-btn" id="noteAddBtn">+ Add note</button>
+              <div class="row-flex" id="noteModeTabs" style="margin:8px 0 12px;"></div>
+
+              <!-- WRITE TAB -->
+              <div id="noteTabWrite">
+                <div class="note-form">
+                  <div class="note-form-row"><input type="text" id="noteTitle" placeholder="Note title…"><select id="noteSubject"></select></div>
+                  <textarea id="noteBody" placeholder="Write the note…"></textarea>
+                  <div class="row-flex" style="gap:8px;">
+                    <button class="note-add-btn" id="noteAddBtn">+ Add note</button>
+                    <button class="note-add-btn" id="noteGenImgBtn" style="background:var(--gold);">🎨 Generate illustration</button>
+                  </div>
+                  <div id="noteImgStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+                  <img id="noteImgPreview" style="display:none;max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">
+                </div>
               </div>
+
+              <!-- SUMMARIZE TAB -->
+              <div id="noteTabSummarize" style="display:none;">
+                <textarea id="longNoteInput" placeholder="Paste a long note here — get a crisp quick-revision summary…" style="width:100%;min-height:100px;font-family:'Lora',serif;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:9px 11px;box-sizing:border-box;margin-bottom:8px;"></textarea>
+                <select id="longNoteSubject" style="margin-bottom:8px;"></select>
+                <button class="note-add-btn" id="summarizeNoteBtn">✨ Summarize & save</button>
+                <div id="summarizeStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+              </div>
+
+              <!-- ORGANIZE TAB -->
+              <div id="noteTabOrganize" style="display:none;">
+                <textarea id="messyNoteInput" placeholder="Paste messy notes here (optional if uploading a screenshot)…" style="width:100%;min-height:70px;font-family:'Lora',serif;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:9px 11px;box-sizing:border-box;margin-bottom:8px;"></textarea>
+                <input type="file" id="messyImageInput" accept="image/*" style="font-family:'JetBrains Mono',monospace;font-size:11px;margin-bottom:8px;">
+                <div class="mono" style="font-size:9.5px;color:var(--pencil);margin-bottom:8px;">Upload a lecture screenshot or messy handwriting photo, and/or paste messy text above.</div>
+                <select id="messyNoteSubject" style="margin-bottom:8px;"></select>
+                <button class="note-add-btn" id="organizeNoteBtn">🧹 Organize & save</button>
+                <div id="organizeStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
+              </div>
+
               <div id="notesList"></div>
             </div>
           </div>
@@ -735,6 +765,9 @@
         <button class="note-add-btn" id="overallDetailNotesSaveBtn" style="margin-top:8px;">Save reflection</button>
         <div id="overallDetailNotesSaved" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
       </div>
+
+      <div class="section-head"><h2>Past reflections</h2><span id="overallReflCount"></span></div>
+      <div id="overallDetailReflectionsList" style="margin-bottom:24px;"></div>
 
       <div class="detail-two-col">
         <div class="panel"><div class="panel-head"><h2>Today's full schedule</h2><span class="count mono" id="overallLecCount"></span></div><div class="panel-body" id="overallLecList"></div></div>
@@ -1079,8 +1112,9 @@
   let quickRecall = [];
   let activeQrTab = 'All';
   let routineBlocks = [];
-  let overallData = { pct: 0, reflection: '' };
+  let overallData = { pct: 0 };
   let overallDataDocId = null;
+  let overallReflections = [];
   let syllabusItems = [];
   let activeSylTab = 'All';
   let sylSelectedCats = [];
@@ -1104,7 +1138,7 @@
     const uid = currentUser.uid;
     const todayIso = todayStrFn();
 
-    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap, qrSnap, routineSnap, overallSnap, sylSnap] = await Promise.all([
+    const [schedSnap, noteSnap, testSnap, resSnap, revSnap, jSnap, distSnap, swSnap, progSnap, sumSnap, chatSnap, qrSnap, routineSnap, overallSnap, sylSnap, reflSnap] = await Promise.all([
       getDocs(query(collection(db,'scheduleItems'), where('userId','==',uid))),
       getDocs(query(collection(db,'notes'), where('userId','==',uid))),
       getDocs(query(collection(db,'tests'), where('userId','==',uid))),
@@ -1120,6 +1154,7 @@
       getDocs(query(collection(db,'routineBlocks'), where('userId','==',uid))),
       getDocs(query(collection(db,'overallData'), where('userId','==',uid))),
       getDocs(query(collection(db,'syllabusItems'), where('userId','==',uid))),
+      getDocs(query(collection(db,'overallReflections'), where('userId','==',uid))),
     ]);
 
     const allScheduleDocs = schedSnap.docs.map(d=>({ id:d.id, ...d.data() }));
@@ -1155,9 +1190,10 @@
     if(!overallSnap.empty){
       const doc0 = overallSnap.docs[0];
       overallDataDocId = doc0.id;
-      overallData = { pct: doc0.data().pct||0, reflection: doc0.data().reflection||'' };
+      overallData = { pct: doc0.data().pct||0 };
     }
     syllabusItems = sylSnap.docs.map(d=>({ id:d.id, ...d.data() }));
+    overallReflections = reflSnap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (b.ts||0)-(a.ts||0));
 
     progSnap.docs.forEach(d=>{ const p=d.data(); if(subjectProgress[p.subject]) subjectProgress[p.subject].pct = p.pct||0; });
     SUBJECTS.forEach(s=>{
@@ -1171,7 +1207,109 @@
     backlog.forEach(b=>{ if(b.daysOld>=2) notifications.push({ t:'Backlog aging', m:`"${b.title}" (${b.subject}) has been pending ${b.daysOld} days — reschedule it.`, warn:true }); });
   }
 
-  document.getElementById('noteSubject').innerHTML = SUBJECTS.map(s=>`<option>${s.name}</option>`).join('');
+  document.getElementById('noteSubject').innerHTML = SUBJECTS.map(s=>`<option>${s.name}</option>`).join('') + '<option>All Subjects</option>';
+  document.getElementById('longNoteSubject').innerHTML = SUBJECTS.map(s=>`<option>${s.name}</option>`).join('') + '<option>All Subjects</option>';
+  document.getElementById('messyNoteSubject').innerHTML = SUBJECTS.map(s=>`<option>${s.name}</option>`).join('') + '<option>All Subjects</option>';
+
+  /* ---- Note mode tabs (Write / Summarize / Organize) ---- */
+  let activeNoteMode = 'Write';
+  const NOTE_MODES = ['Write','Summarize','Organize'];
+  function renderNoteModeTabs(){
+    document.getElementById('noteModeTabs').innerHTML = NOTE_MODES.map(m=>
+      `<button class="pill ${activeNoteMode===m?'active':''}" data-mode="${m}">${m}</button>`).join('');
+    document.querySelectorAll('#noteModeTabs .pill').forEach(b=> b.addEventListener('click', ()=>{
+      activeNoteMode = b.dataset.mode;
+      renderNoteModeTabs();
+      document.getElementById('noteTabWrite').style.display = activeNoteMode==='Write' ? 'block' : 'none';
+      document.getElementById('noteTabSummarize').style.display = activeNoteMode==='Summarize' ? 'block' : 'none';
+      document.getElementById('noteTabOrganize').style.display = activeNoteMode==='Organize' ? 'block' : 'none';
+    }));
+  }
+  renderNoteModeTabs();
+
+  let pendingNoteImageUrl = null;
+  document.getElementById('noteGenImgBtn').addEventListener('click', async ()=>{
+    const title = document.getElementById('noteTitle').value.trim();
+    const body = document.getElementById('noteBody').value.trim();
+    const prompt = title || body;
+    if(!prompt){ alert('Write a title or note first — that becomes the image prompt.'); return; }
+    const btn = document.getElementById('noteGenImgBtn');
+    const statusEl = document.getElementById('noteImgStatus');
+    btn.disabled = true; statusEl.textContent = 'Generating illustration… (can take 10-20s)';
+    try{
+      const res = await fetch('/api/generate-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt }) });
+      const data = await res.json();
+      if(data.error){ statusEl.textContent = data.error; btn.disabled=false; return; }
+      pendingNoteImageUrl = data.imageUrl;
+      const img = document.getElementById('noteImgPreview');
+      img.src = data.imageUrl; img.style.display = 'block';
+      statusEl.textContent = 'Illustration ready — will be attached when you click "+ Add note".';
+    }catch(err){
+      statusEl.textContent = 'Image generation failed — check /api/generate-image is deployed with OPENAI_API_KEY set.';
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('summarizeNoteBtn').addEventListener('click', async ()=>{
+    const longText = document.getElementById('longNoteInput').value.trim();
+    if(!longText || !currentUser) return;
+    const subject = document.getElementById('longNoteSubject').value;
+    const btn = document.getElementById('summarizeNoteBtn');
+    const statusEl = document.getElementById('summarizeStatus');
+    btn.disabled = true; statusEl.textContent = 'Summarizing…';
+    try{
+      const res = await fetch('/api/summarize-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ longText }) });
+      const data = await res.json();
+      if(data.error){ statusEl.textContent = data.error; btn.disabled=false; return; }
+      const noteData = { userId: currentUser.uid, title: 'Quick revision summary', subject, body: data.summary, date: todayStrFn(), createdAt: serverTimestamp() };
+      const ref = await addDoc(collection(db,'notes'), noteData);
+      notes.unshift({ id: ref.id, ...noteData });
+      document.getElementById('longNoteInput').value = '';
+      statusEl.textContent = 'Saved to Notes below.';
+      renderNotes();
+    }catch(err){
+      statusEl.textContent = 'Summarizing failed — check /api/summarize-note is deployed.';
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('organizeNoteBtn').addEventListener('click', async ()=>{
+    const messyText = document.getElementById('messyNoteInput').value.trim();
+    const file = document.getElementById('messyImageInput').files[0];
+    if(!messyText && !file){ alert('Paste messy text or upload an image.'); return; }
+    if(!currentUser) return;
+    const subject = document.getElementById('messyNoteSubject').value;
+    const btn = document.getElementById('organizeNoteBtn');
+    const statusEl = document.getElementById('organizeStatus');
+    btn.disabled = true; statusEl.textContent = 'Organizing…';
+
+    try{
+      let imageBase64 = null, imageMediaType = null;
+      if(file){
+        imageMediaType = file.type;
+        imageBase64 = await new Promise((resolve, reject)=>{
+          const reader = new FileReader();
+          reader.onload = ()=> resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+      const res = await fetch('/api/organize-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messyText, imageBase64, imageMediaType }) });
+      const data = await res.json();
+      if(data.error){ statusEl.textContent = data.error; btn.disabled=false; return; }
+      const noteData = { userId: currentUser.uid, title: 'Organized note', subject, body: data.organized, date: todayStrFn(), createdAt: serverTimestamp() };
+      const ref = await addDoc(collection(db,'notes'), noteData);
+      notes.unshift({ id: ref.id, ...noteData });
+      document.getElementById('messyNoteInput').value = '';
+      document.getElementById('messyImageInput').value = '';
+      statusEl.textContent = 'Saved to Notes below.';
+      renderNotes();
+    }catch(err){
+      statusEl.textContent = 'Organizing failed — check /api/organize-note is deployed.';
+    }
+    btn.disabled = false;
+  });
+
 
 
   /* ============ STAT DASHBOARD (home) ============ */
@@ -1219,21 +1357,46 @@
       await saveOverallData();
     });
 
-    document.getElementById('overallNotes').value = overallData.reflection || '';
+    renderOverallReflectionsList('overallReflectionsList', 3);
   }
 
   async function saveOverallData(){
     if(overallDataDocId){
-      await updateDoc(doc(db,'overallData',overallDataDocId), { pct: overallData.pct, reflection: overallData.reflection });
+      await updateDoc(doc(db,'overallData',overallDataDocId), { pct: overallData.pct });
     } else {
-      const ref = await addDoc(collection(db,'overallData'), { userId: currentUser.uid, pct: overallData.pct, reflection: overallData.reflection, createdAt: serverTimestamp() });
+      const ref = await addDoc(collection(db,'overallData'), { userId: currentUser.uid, pct: overallData.pct, createdAt: serverTimestamp() });
       overallDataDocId = ref.id;
     }
   }
 
+  function renderOverallReflectionsList(targetId, limit){
+    const el = document.getElementById(targetId);
+    if(!el) return;
+    const items = limit ? overallReflections.slice(0, limit) : overallReflections;
+    el.innerHTML = items.length ? items.map(r=>`
+      <div class="note-item">
+        <div class="note-item-date">${r.date}</div>
+        <div class="note-item-body">${r.text}</div>
+      </div>`).join('') : '<div class="empty-note">No reflections logged yet.</div>';
+    if(targetId==='overallDetailReflectionsList'){
+      const countEl = document.getElementById('overallReflCount');
+      if(countEl) countEl.textContent = overallReflections.length + ' SAVED';
+    }
+  }
+
+  async function addOverallReflection(text){
+    if(!text.trim() || !currentUser) return;
+    const data = { userId: currentUser.uid, text: text.trim(), date: todayStrFn(), ts: Date.now(), createdAt: serverTimestamp() };
+    const ref = await addDoc(collection(db,'overallReflections'), data);
+    overallReflections.unshift({ id: ref.id, ...data });
+    renderOverallReflectionsList('overallReflectionsList', 3);
+    renderOverallReflectionsList('overallDetailReflectionsList');
+  }
+
   document.getElementById('overallNotesSaveBtn').addEventListener('click', async ()=>{
-    overallData.reflection = document.getElementById('overallNotes').value.trim();
-    await saveOverallData();
+    const box = document.getElementById('overallNotes');
+    await addOverallReflection(box.value);
+    box.value = '';
     const savedEl = document.getElementById('overallNotesSaved');
     savedEl.textContent = 'Saved just now.';
     setTimeout(()=>{ savedEl.textContent = ''; }, 3000);
@@ -1407,22 +1570,44 @@
   }
 
   /* ============ NOTES (home) ============ */
+  function printSingleNote(note){
+    const rows = `<tr><td style="border:none;padding-top:14px;">
+      <div style="font-family: monospace; font-size:10px; text-transform:uppercase; color:#8B8478; margin-bottom:6px;">${note.subject} · ${note.date}</div>
+      <div style="white-space:pre-wrap; font-size:14px; line-height:1.7;">${note.body}</div>
+      ${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;margin-top:14px;border-radius:5px;">` : ''}
+    </td></tr>`;
+    const html = `<!DOCTYPE html><html><head><title>${note.title}</title>
+      <style>body{font-family:Georgia,serif;padding:40px;color:#1C2B39;} h1{font-size:22px;margin-bottom:4px;} p.meta{font-family:monospace;font-size:11px;color:#8B8478;margin-top:0;} table{width:100%;border-collapse:collapse;} td{border:none;} @media print{body{padding:20px;}}</style>
+      </head><body><h1>${note.title}</h1><p class="meta">Field Notes · Printed ${new Date().toLocaleString()}</p><table>${rows}</table></body></html>`;
+    const w = window.open('', '_blank');
+    if(!w){ alert('Please allow pop-ups to print.'); return; }
+    w.document.write(html); w.document.close(); w.focus();
+    setTimeout(()=> w.print(), 350);
+  }
+
   function renderNotes(){
     document.getElementById('notesCount').textContent = notes.length + ' SAVED';
     document.getElementById('notesList').innerHTML = notes.map(n=>`
-      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;align-items:center;gap:6px;"><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>
-      <div class="note-item-body">${n.body}</div><div class="note-item-date">${n.date}</div></div>`).join('');
-    document.querySelectorAll('#notesList .del-btn').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, renderNotes)));
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;align-items:center;gap:6px;"><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span><button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>
+      <div class="note-item-body">${n.body}</div>${n.imageUrl ? `<img src="${n.imageUrl}" style="max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">` : ''}<div class="note-item-date">${n.date}</div></div>`).join('');
+    document.querySelectorAll('#notesList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, renderNotes)));
+    document.querySelectorAll('#notesList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
+      const note = notes.find(n=>n.id===b.dataset.id);
+      if(note) printSingleNote(note);
+    }));
   }
   document.getElementById('noteAddBtn').addEventListener('click', async ()=>{
     const title = document.getElementById('noteTitle').value.trim();
     const body = document.getElementById('noteBody').value.trim();
     const subject = document.getElementById('noteSubject').value;
     if(!title || !body) return;
-    const data = { userId: currentUser.uid, title, subject, body, date: todayStrFn(), createdAt: serverTimestamp() };
+    const data = { userId: currentUser.uid, title, subject, body, date: todayStrFn(), imageUrl: pendingNoteImageUrl || null, createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'notes'), data);
     notes.unshift({ id: ref.id, ...data });
     document.getElementById('noteTitle').value=''; document.getElementById('noteBody').value='';
+    document.getElementById('noteImgPreview').style.display = 'none';
+    document.getElementById('noteImgStatus').textContent = '';
+    pendingNoteImageUrl = null;
     renderNotes(); renderSubjectGrid(); renderOverallLedger();
   });
 
@@ -1555,9 +1740,13 @@
 
     document.getElementById('detailNoteCount').textContent = subjNotes.length + ' SAVED';
     document.getElementById('detailNoteList').innerHTML = subjNotes.length ? subjNotes.map(n=>`
-      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><button class="del-btn" data-id="${n.id}" aria-label="Delete">✕</button></div><div class="note-item-body">${n.body}</div><div class="note-item-date">${n.date}</div></div>`).join('')
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;gap:6px;"><button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div><div class="note-item-body">${n.body}</div>${n.imageUrl ? `<img src="${n.imageUrl}" style="max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">` : ''}<div class="note-item-date">${n.date}</div></div>`).join('')
       : '<div class="empty-note">No notes yet for this subject.</div>';
-    document.querySelectorAll('#detailNoteList .del-btn').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, ()=>renderSubjectDetail(name), renderNotes)));
+    document.querySelectorAll('#detailNoteList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, ()=>renderSubjectDetail(name), renderNotes)));
+    document.querySelectorAll('#detailNoteList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
+      const note = notes.find(n=>n.id===b.dataset.id);
+      if(note) printSingleNote(note);
+    }));
 
     document.getElementById('detailBacklogCount').textContent = subjBacklog.length + ' OPEN';
     document.getElementById('detailBacklogList').innerHTML = subjBacklog.length ? subjBacklog.map(b=>`
@@ -1910,7 +2099,7 @@
       { label:'Avg test score', val: overallAvgTest!==null?overallAvgTest:'—', unit: overallAvgTest!==null?'%':'' },
     ].map(s=>`<div class="stat-card ${s.warn?'rust':''}"><div class="stat-label">${s.label}</div><div class="stat-val">${s.val} <span>${s.unit}</span></div></div>`).join('');
 
-    document.getElementById('overallDetailNotes').value = overallData.reflection || '';
+    renderOverallReflectionsList('overallDetailReflectionsList');
 
     const allLec = schedule.slice().sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99'));
     document.getElementById('overallLecCount').textContent = allLec.length + ' TODAY';
@@ -1939,9 +2128,9 @@
   }
 
   document.getElementById('overallDetailNotesSaveBtn').addEventListener('click', async ()=>{
-    overallData.reflection = document.getElementById('overallDetailNotes').value.trim();
-    await saveOverallData();
-    document.getElementById('overallNotes').value = overallData.reflection;
+    const box = document.getElementById('overallDetailNotes');
+    await addOverallReflection(box.value);
+    box.value = '';
     const savedEl = document.getElementById('overallDetailNotesSaved');
     savedEl.textContent = 'Saved just now.';
     setTimeout(()=>{ savedEl.textContent = ''; }, 3000);
