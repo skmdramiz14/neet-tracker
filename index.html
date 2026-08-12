@@ -289,6 +289,9 @@
   .syl-cat-tag{ font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:0.04em; text-transform:uppercase; padding:3px 8px; border-radius:10px; background:var(--parchment-deep); color:var(--ink-soft); }
   .syl-form-pill{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; padding:6px 11px; border-radius:16px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; }
   .syl-form-pill.selected{ background:var(--green); color:#fff; border-color:var(--green); }
+  .pill{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; padding:7px 13px; border-radius:16px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; transition:background 0.15s; }
+  .pill:hover{ background:var(--parchment-deep); }
+  .pill.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
   .field{ font-family:'Lora',serif; font-size:13px; border:1px solid var(--line); border-radius:3px; padding:8px 10px; background:#fff; color:var(--ink); height:36px; box-sizing:border-box; }
 
   /* ---------- NOTE BLOCK COMPOSER ---------- */
@@ -663,16 +666,34 @@
           <div id="noteTabWrite">
             <div class="note-form-row"><input type="text" id="noteTitle" placeholder="Note title…"><select id="noteSubject"></select></div>
 
-            <div class="mono" style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--pencil);margin:12px 0 6px;">Note content (build block by block)</div>
+            <div class="mono" style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--pencil);margin:12px 0 6px;">Note content</div>
             <div id="noteBlocksPreview" style="border:1px dashed var(--line); border-radius:5px; padding:12px; min-height:50px; margin-bottom:10px;"></div>
 
             <div class="row-flex" style="gap:8px; margin-bottom:10px;">
-              <button class="pill" id="addTextBlockBtn" type="button">+ Text</button>
-              <button class="pill" id="addImageBlockBtn" type="button">+ Image</button>
-              <button class="pill" id="addEquationBlockBtn" type="button">+ Equation</button>
+              <button class="pill active" id="writeModeManualBtn" type="button">✍️ Manual</button>
+              <button class="pill" id="writeModeChatBtn" type="button">💬 Chat with AI</button>
             </div>
 
-            <div id="blockEditorArea"></div>
+            <!-- MANUAL MODE -->
+            <div id="writeManualMode">
+              <div class="row-flex" style="gap:8px; margin-bottom:10px;">
+                <button class="pill" id="addTextBlockBtn" type="button">+ Text</button>
+                <button class="pill" id="addImageBlockBtn" type="button">+ Image</button>
+                <button class="pill" id="addEquationBlockBtn" type="button">+ Equation</button>
+              </div>
+              <div id="blockEditorArea"></div>
+            </div>
+
+            <!-- CHAT MODE -->
+            <div id="writeChatMode" style="display:none;">
+              <div class="chat-box">
+                <div class="chat-messages" id="noteChatMessages"><div class="chat-empty">Try: "add a line about photosynthesis", "make an image of a plant cell", "write the formula for kinetic energy"</div></div>
+                <div class="chat-input-row">
+                  <input type="text" id="noteChatInput" placeholder="Tell the AI what to add to this note…">
+                  <button class="chat-send-btn" id="noteChatSendBtn" aria-label="Send"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+                </div>
+              </div>
+            </div>
 
             <button class="note-add-btn" id="noteAddBtn" style="margin-top:12px;">+ Save note</button>
             <div id="noteImgStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
@@ -1245,6 +1266,92 @@
     }));
   }
   renderNoteModeTabs();
+
+  /* ---- Write tab: Manual vs Chat mode toggle ---- */
+  document.getElementById('writeModeManualBtn').addEventListener('click', ()=>{
+    document.getElementById('writeModeManualBtn').classList.add('active');
+    document.getElementById('writeModeChatBtn').classList.remove('active');
+    document.getElementById('writeManualMode').style.display = 'block';
+    document.getElementById('writeChatMode').style.display = 'none';
+  });
+  document.getElementById('writeModeChatBtn').addEventListener('click', ()=>{
+    document.getElementById('writeModeChatBtn').classList.add('active');
+    document.getElementById('writeModeManualBtn').classList.remove('active');
+    document.getElementById('writeManualMode').style.display = 'none';
+    document.getElementById('writeChatMode').style.display = 'block';
+  });
+
+  function addNoteChatMessage(role, text){
+    const box = document.getElementById('noteChatMessages');
+    if(box.querySelector('.chat-empty')) box.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = `chat-msg ${role}`;
+    el.textContent = text;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function sendNoteChatMessage(){
+    const input = document.getElementById('noteChatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = '';
+    addNoteChatMessage('user', text);
+
+    const pendingEl = document.createElement('div');
+    pendingEl.className = 'chat-msg assistant pending';
+    pendingEl.textContent = 'Thinking…';
+    document.getElementById('noteChatMessages').appendChild(pendingEl);
+    document.getElementById('noteChatMessages').scrollTop = 999999;
+
+    const noteContext = noteBlocks.map(b=>{
+      if(b.type==='text') return `[text] ${b.content}`;
+      if(b.type==='image') return `[image already added]`;
+      if(b.type==='equation') return `[equation] ${b.latex}`;
+      return '';
+    }).join('\n');
+
+    try{
+      const res = await fetch('/api/note-chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message:text, noteContext }) });
+      const data = await res.json();
+      pendingEl.remove();
+      if(data.error){ addNoteChatMessage('assistant', data.error); return; }
+
+      if(data.action === 'text'){
+        noteBlocks.push({ type:'text', content: data.content });
+        renderNoteBlocksPreview();
+        addNoteChatMessage('assistant', data.reply || 'Added that to the note.');
+      } else if(data.action === 'image'){
+        addNoteChatMessage('assistant', data.reply || 'Generating that image…');
+        try{
+          const imgRes = await fetch('/api/generate-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt: data.content }) });
+          const imgData = await imgRes.json();
+          if(imgData.error){ addNoteChatMessage('assistant', imgData.error); return; }
+          const permanentUrl = await persistGeneratedImage(imgData.imageBase64, imgData.mediaType);
+          noteBlocks.push({ type:'image', url: permanentUrl });
+          renderNoteBlocksPreview();
+          addNoteChatMessage('assistant', 'Image added to the note.');
+        }catch(e){ addNoteChatMessage('assistant', 'Image generation failed — check /api/generate-image is deployed with OPENAI_API_KEY.'); }
+      } else if(data.action === 'equation'){
+        addNoteChatMessage('assistant', data.reply || 'Formatting that equation…');
+        try{
+          const eqRes = await fetch('/api/format-equation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ description: data.content }) });
+          const eqData = await eqRes.json();
+          if(eqData.error){ addNoteChatMessage('assistant', eqData.error); return; }
+          noteBlocks.push({ type:'equation', latex: eqData.latex });
+          renderNoteBlocksPreview();
+          addNoteChatMessage('assistant', 'Equation added to the note.');
+        }catch(e){ addNoteChatMessage('assistant', 'Equation formatting failed — check /api/format-equation is deployed.'); }
+      } else {
+        addNoteChatMessage('assistant', data.reply || "I'm not sure what to add — try being more specific.");
+      }
+    }catch(err){
+      pendingEl.remove();
+      addNoteChatMessage('assistant', "Couldn't reach the AI — check /api/note-chat is deployed.");
+    }
+  }
+  document.getElementById('noteChatSendBtn').addEventListener('click', sendNoteChatMessage);
+  document.getElementById('noteChatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendNoteChatMessage(); });
 
   /* ---- Note block composer (Write tab) ---- */
   let noteBlocks = [];
