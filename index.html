@@ -1281,6 +1281,7 @@
     document.getElementById('writeChatMode').style.display = 'block';
   });
 
+  let noteChatLog = [];
   function addNoteChatMessage(role, text){
     const box = document.getElementById('noteChatMessages');
     if(box.querySelector('.chat-empty')) box.innerHTML = '';
@@ -1289,6 +1290,7 @@
     el.textContent = text;
     box.appendChild(el);
     box.scrollTop = box.scrollHeight;
+    noteChatLog.push({ role, text });
   }
 
   async function sendNoteChatMessage(){
@@ -1331,7 +1333,7 @@
           noteBlocks.push({ type:'image', url: permanentUrl });
           renderNoteBlocksPreview();
           addNoteChatMessage('assistant', 'Image added to the note.');
-        }catch(e){ addNoteChatMessage('assistant', 'Image generation failed — check /api/generate-image is deployed with OPENAI_API_KEY.'); }
+        }catch(e){ addNoteChatMessage('assistant', 'Image generation failed: ' + (e.message || 'unknown error')); console.error('Note-chat image error:', e); }
       } else if(data.action === 'equation'){
         addNoteChatMessage('assistant', data.reply || 'Formatting that equation…');
         try{
@@ -1440,7 +1442,7 @@
       noteBlocks.push({ type:'image', url: permanentUrl });
       renderNoteBlocksPreview();
       closeBlockEditor();
-    }catch(err){ statusEl.textContent = 'Generation failed — check /api/generate-image is deployed with OPENAI_API_KEY.'; }
+    }catch(err){ statusEl.textContent = 'Generation failed: ' + (err.message || 'unknown error'); console.error('Image block error:', err); }
   });
     document.getElementById('uploadBlockImgBtn').addEventListener('click', async ()=>{
       const file = document.getElementById('newBlockImgFile').files[0];
@@ -1863,12 +1865,29 @@
     setTimeout(()=> w.print(), 350);
   }
 
+  function chatLogHTML(note, idx, prefix){
+    if(!note.chatLog || !note.chatLog.length) return '';
+    return `<button class="del-btn" data-idx="${idx}" data-kind="viewchat" style="font-size:11px;" aria-label="View AI chat">💬</button>
+      <div id="${prefix}${idx}" style="display:none; background:var(--parchment-deep); border-radius:5px; padding:10px; margin-top:8px; font-size:12px;">
+        ${note.chatLog.map(m=>`<div style="margin-bottom:6px;"><b style="text-transform:capitalize;">${m.role}:</b> ${m.text}</div>`).join('')}
+      </div>`;
+  }
+  function wireChatLogToggles(notesArr, prefix){
+    document.querySelectorAll(`.del-btn[data-kind="viewchat"]`).forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const el = document.getElementById(`${prefix}${b.dataset.idx}`);
+        if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+      });
+    });
+  }
+
   function renderNotes(){
     document.getElementById('notesCount').textContent = notes.length + ' SAVED';
     document.getElementById('notesList').innerHTML = notes.map((n,idx)=>`
-      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;align-items:center;gap:6px;"><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span><button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;align-items:center;gap:6px;"><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span>${chatLogHTML(n, idx, 'noteChatLog_')}<button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>
       ${noteContentHTML(n, `noteEq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('');
     notes.forEach((n,idx)=> renderNoteEquations(n, `noteEq${idx}_`));
+    wireChatLogToggles(notes, 'noteChatLog_');
     document.querySelectorAll('#notesList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, renderNotes)));
     document.querySelectorAll('#notesList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
       const note = notes.find(n=>n.id===b.dataset.id);
@@ -1881,11 +1900,13 @@
     if(!title || noteBlocks.length===0){ alert('Add a title and at least one block (text/image/equation) before saving.'); return; }
     // Also store a plain-text "body" fallback (concatenated text blocks) so search/print/older code paths still work.
     const bodyFallback = noteBlocks.filter(b=>b.type==='text').map(b=>b.content).join(' ') || '(see attached blocks)';
-    const data = { userId: currentUser.uid, title, subject, body: bodyFallback, blocks: noteBlocks, date: todayStrFn(), createdAt: serverTimestamp() };
+    const data = { userId: currentUser.uid, title, subject, body: bodyFallback, blocks: noteBlocks, chatLog: noteChatLog.length ? noteChatLog : null, date: todayStrFn(), createdAt: serverTimestamp() };
     const ref = await addDoc(collection(db,'notes'), data);
     notes.unshift({ id: ref.id, ...data });
     document.getElementById('noteTitle').value='';
     noteBlocks = [];
+    noteChatLog = [];
+    document.getElementById('noteChatMessages').innerHTML = '<div class="chat-empty">Try: "add a line about photosynthesis", "make an image of a plant cell", "write the formula for kinetic energy"</div>';
     renderNoteBlocksPreview();
     closeBlockEditor();
     renderNotes(); renderSubjectGrid(); renderOverallLedger();
@@ -2020,9 +2041,10 @@
 
     document.getElementById('detailNoteCount').textContent = subjNotes.length + ' SAVED';
     document.getElementById('detailNoteList').innerHTML = subjNotes.length ? subjNotes.map((n,idx)=>`
-      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;gap:6px;"><button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>${noteContentHTML(n, `detailNoteEq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('')
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;gap:6px;">${chatLogHTML(n, idx, 'detailChatLog_')}<button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>${noteContentHTML(n, `detailNoteEq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('')
       : '<div class="empty-note">No notes yet for this subject.</div>';
     subjNotes.forEach((n,idx)=> renderNoteEquations(n, `detailNoteEq${idx}_`));
+    wireChatLogToggles(subjNotes, 'detailChatLog_');
     document.querySelectorAll('#detailNoteList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, ()=>renderSubjectDetail(name), renderNotes)));
     document.querySelectorAll('#detailNoteList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
       const note = notes.find(n=>n.id===b.dataset.id);
