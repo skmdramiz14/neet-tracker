@@ -1302,20 +1302,39 @@
         <button class="note-add-btn" id="uploadBlockImgBtn" style="margin-top:8px;">📎 Upload this image</button>
         <div id="blockImgStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
       </div>`;
-    document.getElementById('genBlockImgBtn').addEventListener('click', async ()=>{
-      const prompt = document.getElementById('newBlockImgPrompt').value.trim();
-      if(!prompt) return;
-      const statusEl = document.getElementById('blockImgStatus');
-      statusEl.textContent = 'Generating… (10-20s)';
-      try{
-        const res = await fetch('/api/generate-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt }) });
-        const data = await res.json();
-        if(data.error){ statusEl.textContent = data.error; return; }
-        noteBlocks.push({ type:'image', url: data.imageUrl });
-        renderNoteBlocksPreview();
-        closeBlockEditor();
-      }catch(err){ statusEl.textContent = 'Generation failed — check /api/generate-image is deployed with OPENAI_API_KEY.'; }
-    });
+  // Generated images may come back as a base64 data: URL (gpt-image-1) — too big to
+  // store directly in Firestore, so we re-upload to Firebase Storage and use that
+  // permanent link instead. Plain https:// URLs are used as-is.
+  async function persistGeneratedImage(base64Data, mediaType){
+    // Convert base64 → Blob → upload to Firebase Storage for a permanent URL
+    // (OpenAI's gpt-image-1 returns base64 data directly, not a temporary URL).
+    const byteChars = atob(base64Data);
+    const byteNumbers = new Array(byteChars.length);
+    for(let i=0; i<byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([new Uint8Array(byteNumbers)], { type: mediaType || 'image/png' });
+    const ext = (mediaType||'image/png').split('/')[1] || 'png';
+    const path = `journal-media/${currentUser.uid}/generated-${Date.now()}.${ext}`;
+    const sref = storageRef(storage, path);
+    await uploadBytes(sref, blob);
+    return await getDownloadURL(sref);
+  }
+
+  document.getElementById('genBlockImgBtn').addEventListener('click', async ()=>{
+    const prompt = document.getElementById('newBlockImgPrompt').value.trim();
+    if(!prompt) return;
+    const statusEl = document.getElementById('blockImgStatus');
+    statusEl.textContent = 'Generating… (10-20s)';
+    try{
+      const res = await fetch('/api/generate-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt }) });
+      const data = await res.json();
+      if(data.error){ statusEl.textContent = data.error; return; }
+      statusEl.textContent = 'Saving image…';
+      const permanentUrl = await persistGeneratedImage(data.imageBase64, data.mediaType);
+      noteBlocks.push({ type:'image', url: permanentUrl });
+      renderNoteBlocksPreview();
+      closeBlockEditor();
+    }catch(err){ statusEl.textContent = 'Generation failed — check /api/generate-image is deployed with OPENAI_API_KEY.'; }
+  });
     document.getElementById('uploadBlockImgBtn').addEventListener('click', async ()=>{
       const file = document.getElementById('newBlockImgFile').files[0];
       if(!file || !currentUser) return;
