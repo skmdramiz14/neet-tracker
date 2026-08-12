@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
 <style>
   :root{
     --parchment:#EDE7D9; --parchment-deep:#E3DCCB; --ink:#1C2B39; --ink-soft:#3C4A56;
@@ -296,7 +297,19 @@
 
   /* ---------- NOTE BLOCK COMPOSER ---------- */
   .note-block{ position:relative; margin-bottom:10px; padding-right:26px; }
-  .note-block-text{ font-size:14px; line-height:1.6; white-space:pre-wrap; }
+  .note-block-text{ font-size:14px; line-height:1.6; }
+  .md-content h1, .md-content h2, .md-content h3{ font-family:'Fraunces',serif; font-weight:600; margin:10px 0 6px; color:var(--ink); }
+  .md-content h1{ font-size:17px; } .md-content h2{ font-size:15px; } .md-content h3{ font-size:14px; }
+  .md-content p{ margin:0 0 8px; }
+  .md-content strong{ font-weight:700; }
+  .md-content ul, .md-content ol{ margin:6px 0 8px 20px; }
+  .md-content li{ margin-bottom:3px; }
+  .md-content hr{ border:none; border-top:1px solid var(--line); margin:10px 0; }
+  .md-content table{ border-collapse:collapse; margin:8px 0; width:100%; font-size:12.5px; }
+  .md-content th, .md-content td{ border:1px solid var(--line); padding:5px 8px; text-align:left; }
+  .md-content th{ background:var(--parchment-deep); font-weight:600; }
+  .md-content code{ background:var(--parchment-deep); padding:1px 5px; border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .md-content blockquote{ border-left:3px solid var(--line); padding-left:10px; color:var(--ink-soft); margin:6px 0; }
   .note-block img{ max-width:100%; border-radius:5px; border:1px solid var(--line); }
   .note-block-eq{ padding:10px; background:var(--card); border-radius:4px; overflow-x:auto; }
   .note-block-remove{ position:absolute; top:0; right:0; background:none; border:none; color:var(--pencil); cursor:pointer; font-size:14px; }
@@ -368,6 +381,7 @@
   #journalView{ display:none; }
   #routineView{ display:none; }
   #overallDetailView{ display:none; }
+  #allNotesView{ display:none; }
   .journal-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:8px; }
   .mood-row{ display:flex; gap:10px; margin:6px 0 16px; }
   .mood-btn{ width:44px; height:44px; border-radius:50%; border:1.5px solid var(--line); background:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s ease; }
@@ -717,7 +731,8 @@
             <div id="organizeStatus" class="mono" style="font-size:9px;color:var(--pencil);margin-top:6px;"></div>
           </div>
 
-          <div id="notesList" style="margin-top:14px;"></div>
+          <div class="section-head" style="margin-top:10px;"><h2 style="font-size:15px;">Recent notes</h2><button id="viewAllNotesBtn" class="mono" style="background:none;border:1px solid var(--line);border-radius:20px;padding:5px 11px;font-size:9px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);">View all →</button></div>
+          <div id="notesList" style="margin-top:6px;"></div>
         </div>
       </div>
     </div>
@@ -836,6 +851,17 @@
       <div class="section-head"><h2>Syllabus map — all subjects</h2><span id="overallSylCount"></span></div>
       <div class="row-flex" id="overallSylFilterTabs" style="margin-bottom:14px;"></div>
       <div id="overallSylList"></div>
+    </div>
+    <div style="height:60px"></div>
+  </div>
+
+  <!-- ================= ALL NOTES VIEW ================= -->
+  <div id="allNotesView">
+    <div class="wrap">
+      <button class="back-btn" id="allNotesBackBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Back to dashboard</button>
+      <div class="section-head"><h2>All notes</h2><span class="count mono" id="allNotesCount"></span></div>
+      <div class="row-flex" id="allNotesFilterTabs" style="margin-bottom:16px;"></div>
+      <div id="allNotesList"></div>
     </div>
     <div style="height:60px"></div>
   </div>
@@ -1821,16 +1847,21 @@
   /* ============ NOTES (home) ============ */
   // Renders a note's content (block-based if note.blocks exists, else falls back to
   // old-style plain body + optional single imageUrl for notes created before blocks existed).
+  function renderMarkdown(text){
+    if(!text) return '';
+    if(window.marked) return marked.parse(text);
+    return text; // fallback if marked.js hasn't loaded yet
+  }
   function noteContentHTML(note, eqIdPrefix){
     if(note.blocks && note.blocks.length){
       return note.blocks.map((b,i)=>{
-        if(b.type==='text') return `<div class="note-block-text" style="margin-bottom:8px;">${b.content}</div>`;
+        if(b.type==='text') return `<div class="note-block-text md-content" style="margin-bottom:8px;">${renderMarkdown(b.content)}</div>`;
         if(b.type==='image') return `<img src="${b.url}" style="max-width:100%;border-radius:5px;margin-bottom:8px;border:1px solid var(--line);">`;
         if(b.type==='equation') return `<div class="note-block-eq" id="${eqIdPrefix}${i}" style="margin-bottom:8px;"></div>`;
         return '';
       }).join('');
     }
-    return `<div class="note-item-body">${note.body||''}</div>${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">` : ''}`;
+    return `<div class="note-item-body md-content">${renderMarkdown(note.body||'')}</div>${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;border-radius:5px;margin-top:8px;border:1px solid var(--line);">` : ''}`;
   }
   function renderNoteEquations(note, eqIdPrefix){
     if(!note.blocks || !window.katex) return;
@@ -1845,18 +1876,18 @@
   function printSingleNote(note){
     const blocksHtml = note.blocks && note.blocks.length
       ? note.blocks.map(b=>{
-          if(b.type==='text') return `<div style="white-space:pre-wrap; font-size:14px; line-height:1.7; margin-bottom:12px;">${b.content}</div>`;
+          if(b.type==='text') return `<div style="font-size:14px; line-height:1.7; margin-bottom:12px;">${renderMarkdown(b.content)}</div>`;
           if(b.type==='image') return `<img src="${b.url}" style="max-width:100%;margin-bottom:12px;border-radius:5px;">`;
           if(b.type==='equation') return `<div style="font-size:16px; margin-bottom:12px; font-family:serif;">${b.latex}</div>`;
           return '';
         }).join('')
-      : `<div style="white-space:pre-wrap; font-size:14px; line-height:1.7;">${note.body||''}</div>${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;margin-top:14px;border-radius:5px;">` : ''}`;
+      : `<div style="font-size:14px; line-height:1.7;">${renderMarkdown(note.body||'')}</div>${note.imageUrl ? `<img src="${note.imageUrl}" style="max-width:100%;margin-top:14px;border-radius:5px;">` : ''}`;
     const rows = `<tr><td style="border:none;padding-top:14px;">
       <div style="font-family: monospace; font-size:10px; text-transform:uppercase; color:#8B8478; margin-bottom:10px;">${note.subject} · ${note.date}</div>
       ${blocksHtml}
     </td></tr>`;
     const html = `<!DOCTYPE html><html><head><title>${note.title}</title>
-      <style>body{font-family:Georgia,serif;padding:40px;color:#1C2B39;} h1{font-size:22px;margin-bottom:4px;} p.meta{font-family:monospace;font-size:11px;color:#8B8478;margin-top:0;} table{width:100%;border-collapse:collapse;} td{border:none;} @media print{body{padding:20px;}}</style>
+      <style>body{font-family:Georgia,serif;padding:40px;color:#1C2B39;} h1{font-size:22px;margin-bottom:4px;} p.meta{font-family:monospace;font-size:11px;color:#8B8478;margin-top:0;} table{width:100%;border-collapse:collapse;} td{border:none;} table td, table th{border:1px solid #ccc;padding:5px 8px;} h1,h2,h3{font-family:Georgia,serif;} @media print{body{padding:20px;}}</style>
       </head><body><h1>${note.title}</h1><p class="meta">Field Notes · Printed ${new Date().toLocaleString()}</p><table>${rows}</table></body></html>`;
     const w = window.open('', '_blank');
     if(!w){ alert('Please allow pop-ups to print.'); return; }
@@ -1864,35 +1895,108 @@
     setTimeout(()=> w.print(), 350);
   }
 
-  function chatLogHTML(note, idx, prefix){
+  function chatLogHTML(note, scope){
     if(!note.chatLog || !note.chatLog.length) return '';
-    return `<button class="del-btn" data-idx="${idx}" data-kind="viewchat" style="font-size:11px;" aria-label="View AI chat">💬</button>
-      <div id="${prefix}${idx}" style="display:none; background:var(--parchment-deep); border-radius:5px; padding:10px; margin-top:8px; font-size:12px;">
+    const boxId = `chatLogBox_${scope}_${note.id}`;
+    return `<button class="del-btn" data-target="${boxId}" data-kind="viewchat" style="font-size:11px;" aria-label="View AI chat">💬</button>
+      <div id="${boxId}" style="display:none; background:var(--parchment-deep); border-radius:5px; padding:10px; margin-top:8px; font-size:12px;">
         ${note.chatLog.map(m=>`<div style="margin-bottom:6px;"><b style="text-transform:capitalize;">${m.role}:</b> ${m.text}</div>`).join('')}
       </div>`;
   }
-  function wireChatLogToggles(notesArr, prefix){
-    document.querySelectorAll(`.del-btn[data-kind="viewchat"]`).forEach(b=>{
+  function wireChatLogToggles(containerEl){
+    containerEl.querySelectorAll('.del-btn[data-kind="viewchat"]').forEach(b=>{
       b.addEventListener('click', ()=>{
-        const el = document.getElementById(`${prefix}${b.dataset.idx}`);
+        const el = document.getElementById(b.dataset.target);
         if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
       });
     });
   }
 
-  function renderNotes(){
-    document.getElementById('notesCount').textContent = notes.length + ' SAVED';
-    document.getElementById('notesList').innerHTML = notes.map((n,idx)=>`
-      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;align-items:center;gap:6px;"><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span>${chatLogHTML(n, idx, 'noteChatLog_')}<button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>
-      ${noteContentHTML(n, `noteEq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('');
-    notes.forEach((n,idx)=> renderNoteEquations(n, `noteEq${idx}_`));
-    wireChatLogToggles(notes, 'noteChatLog_');
-    document.querySelectorAll('#notesList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, renderNotes)));
-    document.querySelectorAll('#notesList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
+  function noteCardsHTML(notesArr, scope){
+    if(!notesArr.length) return '<div class="empty-note">No notes yet.</div>';
+    return notesArr.map((n,idx)=>`
+      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;align-items:center;gap:6px;"><span class="note-item-tag" style="color:${subjColor(n.subject)}"><span class="dot" style="background:${subjColor(n.subject)}"></span>${n.subject}</span>${chatLogHTML(n, scope)}<button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>
+      ${noteContentHTML(n, `${scope}Eq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('');
+  }
+  function wireNoteCardEvents(containerEl, notesArr, scope){
+    notesArr.forEach((n,idx)=> renderNoteEquations(n, `${scope}Eq${idx}_`));
+    wireChatLogToggles(containerEl);
+    containerEl.querySelectorAll('.del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>{
+      const rerenderBoth = ()=>{ renderNotes(); if(document.getElementById('allNotesView').style.display==='block') renderAllNotesView(); };
+      deleteItem('notes', b.dataset.id, notes, rerenderBoth);
+    }));
+    containerEl.querySelectorAll('.del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
       const note = notes.find(n=>n.id===b.dataset.id);
       if(note) printSingleNote(note);
     }));
   }
+
+  function renderNotesInto(listElId, countElId, notesArr, scope){
+    if(countElId) document.getElementById(countElId).textContent = notesArr.length + ' SAVED';
+    const listEl = document.getElementById(listElId);
+    listEl.innerHTML = noteCardsHTML(notesArr, scope);
+    wireNoteCardEvents(listEl, notesArr, scope);
+  }
+
+  function renderNotes(){
+    // Homepage shows only the 5 most recent notes, to keep the dashboard from growing forever.
+    renderNotesInto('notesList', 'notesCount', notes.slice(0,5), 'home_');
+  }
+
+  let activeAllNotesFilter = 'All';
+  function renderAllNotesView(){
+    document.getElementById('allNotesCount').textContent = notes.length + ' SAVED';
+
+    // Build filter tabs: "All" plus every subject that actually has at least one note.
+    const subjectsWithNotes = [...new Set(notes.map(n=>n.subject))];
+    const tabOrder = ['All', ...SUBJECTS.map(s=>s.name).filter(s=>subjectsWithNotes.includes(s)), ...subjectsWithNotes.filter(s=>!SUBJECTS.some(sub=>sub.name===s))];
+    document.getElementById('allNotesFilterTabs').innerHTML = tabOrder.map(t=>{
+      const n = t==='All' ? notes.length : notes.filter(nt=>nt.subject===t).length;
+      return `<button class="pill ${activeAllNotesFilter===t?'active':''}" data-tab="${t}">${t} (${n})</button>`;
+    }).join('');
+    document.querySelectorAll('#allNotesFilterTabs .pill').forEach(b=> b.addEventListener('click', ()=>{ activeAllNotesFilter=b.dataset.tab; renderAllNotesView(); }));
+
+    const container = document.getElementById('allNotesList');
+
+    if(activeAllNotesFilter !== 'All'){
+      // Single-subject view: flat list, no group headers needed.
+      const filtered = notes.filter(n=>n.subject===activeAllNotesFilter);
+      renderNotesInto('allNotesList', null, filtered, 'allFlat_');
+      return;
+    }
+
+    // "All" view: group notes under subject headings, in a sensible fixed order.
+    const groupOrder = [...SUBJECTS.map(s=>s.name), 'All Subjects', ...subjectsWithNotes.filter(s=> !SUBJECTS.some(sub=>sub.name===s) && s!=='All Subjects')];
+    let html = '';
+    groupOrder.forEach(subj=>{
+      const groupNotes = notes.filter(n=>n.subject===subj);
+      if(!groupNotes.length) return;
+      html += `<div class="mono" style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${subjColor(subj)};margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);">${subj} · ${groupNotes.length}</div>`;
+      html += noteCardsHTML(groupNotes, `allGrp_${subj.replace(/[^a-zA-Z0-9]/g,'')}_`);
+    });
+    container.innerHTML = html || '<div class="empty-note">No notes yet.</div>';
+    wireNoteCardEvents(container, notes, ''); // scope only affects generated IDs (already unique per group above); a single wire pass over the whole container is safe since data-kind selectors aren't scope-dependent.
+  }
+  function openAllNotes(){
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('subjectView').style.display = 'none';
+    document.getElementById('journalView').style.display = 'none';
+    document.getElementById('routineView').style.display = 'none';
+    document.getElementById('overallDetailView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'block';
+    currentSubject = null;
+    window.scrollTo(0,0);
+    renderAllNotesView();
+  }
+  function closeAllNotes(){
+    document.getElementById('allNotesView').style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+    window.scrollTo(0,0);
+  }
+  document.getElementById('viewAllNotesBtn').addEventListener('click', openAllNotes);
+  document.getElementById('allNotesBackBtn').addEventListener('click', closeAllNotes);
+
   document.getElementById('noteAddBtn').addEventListener('click', async ()=>{
     const title = document.getElementById('noteTitle').value.trim();
     const subject = document.getElementById('noteSubject').value;
@@ -1975,6 +2079,7 @@
     document.getElementById('journalView').style.display = 'none';
     document.getElementById('routineView').style.display = 'none';
     document.getElementById('overallDetailView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'none';
     document.getElementById('subjectView').style.display = 'block';
     window.scrollTo(0,0);
     renderSubjectDetail(name);
@@ -2038,17 +2143,7 @@
       : '<div class="empty-note">No tests logged yet for this subject.</div>';
     document.querySelectorAll('#detailTestList .del-btn').forEach(b=> b.addEventListener('click', ()=>deleteItem('tests', b.dataset.id, tests, ()=>renderSubjectDetail(name), renderSubjectGrid)));
 
-    document.getElementById('detailNoteCount').textContent = subjNotes.length + ' SAVED';
-    document.getElementById('detailNoteList').innerHTML = subjNotes.length ? subjNotes.map((n,idx)=>`
-      <div class="note-item"><div class="note-item-head"><span class="note-item-title">${n.title}</span><span style="display:flex;gap:6px;">${chatLogHTML(n, idx, 'detailChatLog_')}<button class="del-btn" data-id="${n.id}" data-kind="print" aria-label="Print">🖨</button><button class="del-btn" data-id="${n.id}" data-kind="note" aria-label="Delete">✕</button></span></div>${noteContentHTML(n, `detailNoteEq${idx}_`)}<div class="note-item-date">${n.date}</div></div>`).join('')
-      : '<div class="empty-note">No notes yet for this subject.</div>';
-    subjNotes.forEach((n,idx)=> renderNoteEquations(n, `detailNoteEq${idx}_`));
-    wireChatLogToggles(subjNotes, 'detailChatLog_');
-    document.querySelectorAll('#detailNoteList .del-btn[data-kind="note"]').forEach(b=> b.addEventListener('click', ()=>deleteItem('notes', b.dataset.id, notes, ()=>renderSubjectDetail(name), renderNotes)));
-    document.querySelectorAll('#detailNoteList .del-btn[data-kind="print"]').forEach(b=> b.addEventListener('click', ()=>{
-      const note = notes.find(n=>n.id===b.dataset.id);
-      if(note) printSingleNote(note);
-    }));
+    renderNotesInto('detailNoteList', 'detailNoteCount', subjNotes, 'detail_');
 
     document.getElementById('detailBacklogCount').textContent = subjBacklog.length + ' OPEN';
     document.getElementById('detailBacklogList').innerHTML = subjBacklog.length ? subjBacklog.map(b=>`
@@ -2254,6 +2349,7 @@
     document.getElementById('subjectView').style.display = 'none';
     document.getElementById('routineView').style.display = 'none';
     document.getElementById('overallDetailView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'none';
     document.getElementById('journalView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
@@ -2272,6 +2368,7 @@
     document.getElementById('subjectView').style.display = 'none';
     document.getElementById('journalView').style.display = 'none';
     document.getElementById('overallDetailView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'none';
     document.getElementById('routineView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
@@ -2291,6 +2388,7 @@
     document.getElementById('subjectView').style.display = 'none';
     document.getElementById('journalView').style.display = 'none';
     document.getElementById('routineView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'none';
     document.getElementById('overallDetailView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
@@ -2298,6 +2396,7 @@
   }
   function closeOverallDetail(){
     document.getElementById('overallDetailView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'none';
     document.getElementById('homeView').style.display = 'block';
     window.scrollTo(0,0);
   }
@@ -2443,6 +2542,7 @@
     document.getElementById('subjectView').style.display = 'none';
     document.getElementById('routineView').style.display = 'none';
     document.getElementById('overallDetailView').style.display = 'none';
+    document.getElementById('allNotesView').style.display = 'none';
     document.getElementById('homeView').style.display = 'block';
     currentSubject = null;
     window.scrollTo(0,0);
