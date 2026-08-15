@@ -1406,7 +1406,7 @@
       return;
     }
     box.innerHTML = noteBlocks.map((b,i)=>{
-      if(b.type==='text') return `<div class="note-block" data-i="${i}"><div class="note-block-text">${b.content}</div><button class="note-block-remove" data-i="${i}">✕</button></div>`;
+      if(b.type==='text') return `<div class="note-block" data-i="${i}"><div class="note-block-text md-content">${renderMarkdown(b.content)}</div><button class="note-block-remove" data-i="${i}">✕</button></div>`;
       if(b.type==='image') return `<div class="note-block" data-i="${i}"><img src="${b.url}"><button class="note-block-remove" data-i="${i}">✕</button></div>`;
       if(b.type==='equation') return `<div class="note-block" data-i="${i}"><div class="note-block-eq" id="eqBlock${i}"></div><button class="note-block-remove" data-i="${i}">✕</button></div>`;
       return '';
